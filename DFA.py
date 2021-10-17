@@ -31,13 +31,51 @@ def add_nodes():
 
 def describe_dfa():
     add_nodes()
-    #add_edges()
+    add_edges()
 
 
 def add_edge(i, j, eval_func):
     states[i].add_transition(states[j], eval_func)
 
 
+def add_edges():
+    add_edge(0, 1, digit)
+    add_edge(1, 1, digit)
+    # other for NUM:
+    add_edge(1, 2, lambda x: symbol(x) or whitespace(x) or slash(x))
+    # other than other (errors) for NUM:
+    add_edge(1, 3, lambda x: True)  # todo: check if this works fine
+
+    add_edge(0, 4, letter)
+    add_edge(4, 4, letter)
+    # other for ID:
+    add_edge(4, 5, lambda x: symbol(x) or whitespace(x) or slash(x))
+
+    add_edge(0, 6, lambda x: x == '=')
+    add_edge(0, 7, lambda x: x == '=')
+    # other for =
+    add_edge(6, 8, lambda x: letter(x) or digit(x) or whitespace(x) or slash(x) or (symbol(x) and x != '='))
+    # todo: symbol?
+
+    add_edge(0, 9, lambda x: x == '*')
+    add_edge(9, 10, lambda x: x == '/')
+    # other for *
+    add_edge(9, 11, lambda x: True)  # todo
+
+    add_edge(0, 12, lambda x: symbol(x) and x != '=' and x != '*')
+
+    add_edge(0, 13, whitespace)
+
+    add_edge(0, 14, slash)
+    add_edge(14, 15, slash)
+    add_edge(15, 16, lambda x: x == '\n' or x == 'EOF')  # todo: EOF
+    add_edge(14, 17, lambda x: x == '*')
+    add_edge(17, 18, lambda x: x == '*')
+    add_edge(17, 20, lambda x: x == 'EOF')
+    add_edge(18, 20, lambda x: x == 'EOF')
+    add_edge(17, 17, lambda x: x != '*' and x != 'EOF')
+    add_edge(18, 19, slash)
+    add_edge(18, 17, lambda x: x != '*' and x != '/' and x != 'EOF')
 
 
 def digit(x: str):
