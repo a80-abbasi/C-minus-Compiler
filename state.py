@@ -1,21 +1,18 @@
 class State:
 
-    def __init__(self, neighbors: dict = None, is_final=False, token_type: str = None, other: list = None):
-        self.neighbors = neighbors
+    def __init__(self, is_final: bool = False, has_error: bool = False, token_type: str = None):
+        self.neighbors: dict = {}
         self.is_final = is_final
+        self.has_error = has_error
         self.token_type = token_type
-        self.other = other if other else []
 
-    def add_transition(self, next_state, input_char: str):
-        if input_char not in self.neighbors:
-            self.neighbors[input_char] = next_state
+    def add_transition(self, next_state, eval_func):
+        if eval_func not in self.neighbors:
+            self.neighbors[eval_func] = next_state
 
     def get_next_state(self, input_char: str):
-        if input_char.isdigit():
-            input_char = 'digit'
-        elif input_char.isalpha():
-            input_char = 'letter'
-        elif input_char in self.other:
-            input_char = 'other'
+        for eval_func, state in self.neighbors.items():
+            if eval_func(input_char):
+                return state
 
-        return self.neighbors[input_char]
+        raise ValueError('invalid input')
