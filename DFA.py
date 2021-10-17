@@ -29,3 +29,33 @@ def add_nodes():
     states[20].token_type = 'Unclosed comment'
 
 
+def describe_dfa():
+    add_nodes()
+    #add_edges()
+
+
+def add_edge(i, j, eval_func):
+    states[i].add_transition(states[j], eval_func)
+
+
+
+
+def digit(x: str):
+    return x.isdigit()
+
+
+def letter(x: str):
+    return x.isalpha()
+
+
+def slash(x: str):
+    return x == '/'
+
+
+def whitespace(x: str):
+    return x in [' ', '\n', '\r', '\t', '\v', '\f']
+    # or maybe x.space?
+
+
+def symbol(x: str):
+    return x in [';', ':', ',', '[', ']', '(', ')', '{', '}', '+', '-', '*', '=', '<']
