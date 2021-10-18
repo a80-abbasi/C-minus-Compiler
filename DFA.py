@@ -17,7 +17,7 @@ class DFA:
         message = None  # either state.token_type or None
         try:
             next_state: State = self.current_state.get_next_state(input_char)
-            print(next_state.token_type)
+            # print(next_state.token_type)
             if next_state.is_final:
                 if next_state.has_error:
                     status = 'ERROR'
@@ -36,13 +36,13 @@ class DFA:
         return [status, message]
 
     def add_nodes(self):
-        for i in range(0, 21):
-            self.states.append(State())
+        for i in range(0, 23):
+            self.states.append(State(i))
 
-        for i in [2, 3, 5, 7, 8, 10, 11, 12, 13, 16, 19, 20]:
+        for i in [2, 3, 5, 7, 8, 10, 11, 12, 13, 16, 19, 20, 21]:
             self.states[i].is_final = True
 
-        for i in [2, 8, 11, 16]:
+        for i in [2, 5, 8, 11, 16]:
             self.states[i].go_back = True
 
         for i in [3, 10, 20]:
@@ -61,6 +61,8 @@ class DFA:
         self.states[19].token_type = 'COMMENT'
         self.states[20].token_type = 'Unclosed comment'
 
+        self.states[21].token_type = 'EOF'
+
     def describe_dfa(self):
         self.add_nodes()
         self.add_edges()
@@ -72,17 +74,17 @@ class DFA:
         self.add_edge(0, 1, digit)
         self.add_edge(1, 1, digit)
         # other for NUM:
-        self.add_edge(1, 2, lambda x: symbol(x) or whitespace(x) or slash(x))
+        self.add_edge(1, 2, lambda x: symbol(x) or whitespace(x) or slash(x) or x == '')
         # other than other (errors) for NUM:
         self.add_edge(1, 3, lambda x: True)  # todo: check if this works fine
 
         self.add_edge(0, 4, letter)
-        self.add_edge(4, 4, letter)
+        self.add_edge(4, 4, lambda x: letter(x) or digit(x))
         # other for ID:
-        self.add_edge(4, 5, lambda x: symbol(x) or whitespace(x) or slash(x))
+        self.add_edge(4, 5, lambda x: symbol(x) or whitespace(x) or slash(x) or x == '')
 
         self.add_edge(0, 6, lambda x: x == '=')
-        self.add_edge(0, 7, lambda x: x == '=')
+        self.add_edge(6, 7, lambda x: x == '=')
         # other for =
         self.add_edge(6, 8, lambda x: letter(x) or digit(x) or whitespace(x) or slash(x) or (symbol(x) and x != '='))
         # todo: symbol?
@@ -98,14 +100,16 @@ class DFA:
 
         self.add_edge(0, 14, slash)
         self.add_edge(14, 15, slash)
-        self.add_edge(15, 16, lambda x: x == '\n' or x == 'EOF')  # todo: EOF
+        self.add_edge(15, 22, lambda x: x != '\n' and x != '')  # todo:
+        self.add_edge(22, 22, lambda x: x != '\n' and x != '')  # todo:
+        self.add_edge(22, 16, lambda x: x == '\n' or x == '')  # todo:
         self.add_edge(14, 17, lambda x: x == '*')
         self.add_edge(17, 18, lambda x: x == '*')
-        self.add_edge(17, 20, lambda x: x == 'EOF')
-        self.add_edge(18, 20, lambda x: x == 'EOF')
-        self.add_edge(17, 17, lambda x: x != '*' and x != 'EOF')
+        self.add_edge(17, 20, lambda x: x == '')
+        self.add_edge(18, 20, lambda x: x == '')
+        self.add_edge(17, 17, lambda x: x != '*' and x != '')
         self.add_edge(18, 19, slash)
-        self.add_edge(18, 17, lambda x: x != '*' and x != '/' and x != 'EOF')
+        self.add_edge(18, 17, lambda x: x != '*' and x != '/' and x != '')
 
 
 def digit(x: str):

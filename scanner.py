@@ -26,18 +26,32 @@ class Scanner:
 
             # Condition for EOF
             if input_char == '':
-                input_char = 'EOF'
                 self.file_ended = True
 
             status, message = self.dfa.do_transition(input_char)
+
         if status.startswith('ERROR'):
-            self.errors_file.write(f'{self.line_number} ({"".join(self.buffer)}, {message})\n')
+            if message == 'Unclosed comment':
+                self.buffer = self.buffer[0:6]
+            self.errors_file.write(f'{self.line_number}.\t({"".join(self.buffer)}, {message})\n')
             self.buffer.clear()
             return self.get_next_token()
 
         elif status.startswith('TOKEN'):
 
+            if message == 'EOF':
+                return None, None
+
+            # Handle * in DFA
+            if 'GO_BACK' in status:
+                self.buffer.pop()
+                self.input_file.seek(self.input_file.tell() - 1)
+
             token_string = "".join(self.buffer)
+            self.buffer.clear()
+
+            if token_string == '\n':
+                self.line_number = self.line_number + 1
 
             # Handle ID , Keyword add new ID to symbol table
             if message == 'ID':
@@ -46,15 +60,10 @@ class Scanner:
                 if token_string not in self.symbol_table:
                     self.symbol_table.append(token_string)
 
-            # Handle * in DFA
-            if 'GO_BACK' in status:
-                token_string = token_string[0:-1]
-                del self.buffer[0:-1]
-            else:
-                self.buffer.clear()
             return [message, token_string]
 
     def close_files(self):
         self.errors_file.close()
-
-
+        with open('symbol_table.txt', 'w') as file:
+            for i, id in enumerate(self.symbol_table):
+                file.write(f'{i + 1}.\t{id}\n')

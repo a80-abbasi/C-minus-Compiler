@@ -1,6 +1,7 @@
 class State:
 
-    def __init__(self, is_final: bool = False, go_back: bool = False, has_error: bool = False, token_type: str = None):
+    def __init__(self, name: int, is_final: bool = False, go_back: bool = False, has_error: bool = False, token_type: str = None):
+        self.name = name
         self.neighbors: dict = {}
         self.is_final = is_final
         self.go_back = go_back
