@@ -2,6 +2,7 @@ from state import State
 
 
 class DFA:
+
     def __init__(self):
         self.states: list[State] = []
         self.describe_dfa()
@@ -11,9 +12,28 @@ class DFA:
     def start_state(self):
         return self.states[0]
 
-    def transition(self, input_char: str):
-        self.current_state = self.current_state.get_next_state(input_char)
-        return self.current_state
+    def do_transition(self, input_char: str):
+        status = None  # either ERROR, GO_BACK or TOKEN or None
+        message = None  # either state.token_type or None
+        try:
+            next_state: State = self.current_state.get_next_state(input_char)
+            print(next_state.token_type)
+            if next_state.is_final:
+                if next_state.has_error:
+                    status = 'ERROR'
+                elif next_state.go_back:
+                    status = 'TOKEN, GO_BACK'
+                else:
+                    status = 'TOKEN'
+                message = next_state.token_type
+                self.current_state = self.start_state
+            else:
+                self.current_state = next_state
+        except ValueError:
+            status = 'ERROR'
+            message = 'Invalid input'
+            self.current_state = self.start_state
+        return [status, message]
 
     def add_nodes(self):
         for i in range(0, 21):
@@ -30,7 +50,8 @@ class DFA:
 
         self.states[2].token_type = 'NUM'
         self.states[3].token_type = 'Invalid number'
-        self.states[4].token_type = 'ID'
+        self.states[5].token_type = 'ID'
+
         for i in [7, 8, 11, 12]:
             self.states[i].token_type = 'SYMBOL'
 
