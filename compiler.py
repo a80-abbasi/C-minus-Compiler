@@ -1,3 +1,7 @@
+# Maziar Shamsipour 98101844
+# Ali Abbasi 98105879
+
+
 from scanner import Scanner
 
 input_file = open('input.txt', 'r')
