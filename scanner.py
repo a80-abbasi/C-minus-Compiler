@@ -31,9 +31,9 @@ class Scanner:
             status, message = self.dfa.do_transition(input_char)
 
         if status.startswith('ERROR'):
-            if message == 'Unclosed comment':
-                self.buffer = self.buffer[0:6]
-            self.errors_file.write(f'{self.line_number}.\t({"".join(self.buffer)}, {message})\n')
+            #if message == 'Unclosed comment':
+            #    self.buffer = self.buffer[0:7]
+            self.errors_file.write(f'{self.line_number}.\t({"".join(self.buffer)}, {message}) \n')
             self.buffer.clear()
             return self.get_next_token()
 

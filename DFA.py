@@ -36,7 +36,7 @@ class DFA:
         return [status, message]
 
     def add_nodes(self):
-        for i in range(0, 23):
+        for i in range(0, 22):
             self.states.append(State(i))
 
         for i in [2, 3, 5, 7, 8, 10, 11, 12, 13, 16, 19, 20, 21]:
@@ -100,9 +100,8 @@ class DFA:
 
         self.add_edge(0, 14, slash)
         self.add_edge(14, 15, slash)
-        self.add_edge(15, 22, lambda x: x != '\n' and x != '')  # todo:
-        self.add_edge(22, 22, lambda x: x != '\n' and x != '')  # todo:
-        self.add_edge(22, 16, lambda x: x == '\n' or x == '')  # todo:
+        self.add_edge(15, 15, lambda x: x != '\n' and x != '')  # todo:
+        self.add_edge(15, 16, lambda x: x == '\n' or x == '')  # todo:
         self.add_edge(14, 17, lambda x: x == '*')
         self.add_edge(17, 18, lambda x: x == '*')
         self.add_edge(17, 20, lambda x: x == '')

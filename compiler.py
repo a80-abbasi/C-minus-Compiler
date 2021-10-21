@@ -30,6 +30,7 @@ while True:
             print_line_number = False
         tokens_file.write(f"({token_type}, {token_string}) ")
 
+tokens_file.write(f'\n')
 scanner.close_files()
 tokens_file.close()
 input_file.close()
