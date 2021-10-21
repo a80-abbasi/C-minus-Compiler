@@ -60,7 +60,6 @@ class DFA:
         self.states[16].token_type = 'COMMENT'
         self.states[19].token_type = 'COMMENT'
         self.states[20].token_type = 'Unclosed comment'
-
         self.states[21].token_type = 'EOF'
 
     def describe_dfa(self):
@@ -109,6 +108,8 @@ class DFA:
         self.add_edge(17, 17, lambda x: x != '*' and x != '')
         self.add_edge(18, 19, slash)
         self.add_edge(18, 17, lambda x: x != '*' and x != '/' and x != '')
+
+        self.add_edge(0, 21, lambda x: x == '')
 
 
 def digit(x: str):
