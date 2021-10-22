@@ -36,16 +36,16 @@ class DFA:
         return [status, message]
 
     def add_nodes(self):
-        for i in range(0, 22):
+        for i in range(0, 23):
             self.states.append(State(i))
 
-        for i in [2, 3, 5, 7, 8, 10, 11, 12, 13, 16, 19, 20, 21]:
+        for i in [2, 3, 5, 7, 8, 10, 11, 12, 13, 16, 19, 20, 21, 22]:
             self.states[i].is_final = True
 
-        for i in [2, 5, 8, 11, 16]:
+        for i in [2, 5, 8, 11, 16, 22]:
             self.states[i].go_back = True
 
-        for i in [3, 10, 20]:
+        for i in [3, 10, 20, 22]:
             self.states[i].has_error = True
 
         self.states[2].token_type = 'NUM'
@@ -61,6 +61,7 @@ class DFA:
         self.states[19].token_type = 'COMMENT'
         self.states[20].token_type = 'Unclosed comment'
         self.states[21].token_type = 'EOF'
+        self.states[22].token_type = 'Invalid input'
 
     def describe_dfa(self):
         self.add_nodes()
@@ -102,6 +103,7 @@ class DFA:
         self.add_edge(15, 15, lambda x: x != '\n' and x != '')  # todo:
         self.add_edge(15, 16, lambda x: x == '\n' or x == '')  # todo:
         self.add_edge(14, 17, lambda x: x == '*')
+        self.add_edge(14, 22, valid)
         self.add_edge(17, 18, lambda x: x == '*')
         self.add_edge(17, 20, lambda x: x == '')
         self.add_edge(18, 20, lambda x: x == '')
@@ -131,3 +133,7 @@ def whitespace(x: str):
 
 def symbol(x: str):
     return x in [';', ':', ',', '[', ']', '(', ')', '{', '}', '+', '-', '*', '=', '<']
+
+
+def valid(x: str):
+    return digit(x) or letter(x) or slash(x) or slash(x) or whitespace(x) or symbol(x)
