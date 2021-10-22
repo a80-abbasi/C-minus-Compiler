@@ -34,7 +34,12 @@ class Scanner:
 
             status, message = self.dfa.do_transition(input_char)
 
+        if 'GO_BACK' in status:
+            self.buffer.pop()
+            self.input_file.seek(self.pointer_last_position)
+
         if status.startswith('ERROR'):
+
             error_string = "".join(self.buffer)
             if message == 'Unclosed comment':
                 error_string = error_string[0:7] + '...'
@@ -55,9 +60,9 @@ class Scanner:
                 return None, None
 
             # Handle * in DFA
-            if 'GO_BACK' in status:
-                self.buffer.pop()
-                self.input_file.seek(self.pointer_last_position)
+           # if 'GO_BACK' in status:
+            #    self.buffer.pop()
+             #   self.input_file.seek(self.pointer_last_position)
 
             token_string = "".join(self.buffer)
             self.buffer.clear()

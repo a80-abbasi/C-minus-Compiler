@@ -21,10 +21,12 @@ class DFA:
             if next_state.is_final:
                 if next_state.has_error:
                     status = 'ERROR'
-                elif next_state.go_back:
-                    status = 'TOKEN, GO_BACK'
+                    if next_state.go_back:
+                        status += ', GO_BACK'
                 else:
                     status = 'TOKEN'
+                    if next_state.go_back:
+                        status += ', GO_BACK'
                 message = next_state.token_type
                 self.current_state = self.start_state
             else:
@@ -92,7 +94,7 @@ class DFA:
         self.add_edge(0, 9, lambda x: x == '*')
         self.add_edge(9, 10, lambda x: x == '/')
         # other for *
-        self.add_edge(9, 11, lambda x: True)  # todo check if this works fine
+        self.add_edge(9, 11, lambda x: valid(x))  # todo check if this works fine
 
         self.add_edge(0, 12, lambda x: symbol(x) and x != '=' and x != '*')
 
