@@ -111,6 +111,7 @@ class DFA:
         self.add_edge(18, 20, lambda x: x == '')
         self.add_edge(17, 17, lambda x: x != '*' and x != '')
         self.add_edge(18, 19, slash)
+        self.add_edge(18, 18, lambda x: x == '*')
         self.add_edge(18, 17, lambda x: x != '*' and x != '/' and x != '')
 
         self.add_edge(0, 21, lambda x: x == '')
