@@ -4,7 +4,7 @@ from DFA import DFA
 class Scanner:
 
     def __init__(self, input_file):
-        self.keywords = ['if', 'else', 'void', 'int', 'repeat', 'break', 'until', 'return']
+        self.keywords = ['if', 'else', 'void', 'int', 'repeat', 'break', 'until', 'return', 'endif']
         self.symbol_table = list(self.keywords)
         self.dfa = DFA()
         self.buffer = list()
