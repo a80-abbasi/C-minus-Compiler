@@ -3,12 +3,33 @@
 # B: NTT (NonTerminal or Terminal! change it if you want)
 
 class TransitionDiagram:
+
+    grammar_address = 'c-minus_001'
+
     def __init__(self):
-        start_symbol = self.create_transition_diagram()
-        self.state = start_symbol
+        start_symbols = self.create_transition_diagram()
+        grammar_file = open(file=TransitionDiagram.grammar_address, mode='r')
+        self.non_terminals = self.create_non_terminals()
+        self.grammar = grammar_file.read().splitlines()
+        self.state = start_symbols[0]
 
     def create_transition_diagram(self):  # todo
+        start_symbols = {}
+        state_number = 0
+        for non_terminal, rule in enumerate(self.grammar):
+            start_state = StartState(state_number, self.non_terminals[non_terminal])
+            start_symbols[non_terminal] = start_state
+
         return None
+
+    def create_non_terminals(self):
+        non_terminals = []
+        for num, rule in enumerate(self.grammar):
+            non_terminal_name = rule.split('->')[0].strip()
+            non_terminal = NTT(number=num, is_terminal=False, name=non_terminal_name)
+            non_terminals.append(non_terminal)
+        return non_terminals
+
 
     # def do_transition(self, look_ahead):
     #     for ntt, neighbor in self.state.neighbors.items():
@@ -49,18 +70,17 @@ class StartState(State):
 
 
 class NTT:
-    count = 0
-
-    def __init__(self, first, follow=None, is_terminal=False, name=None, number=count):
-        self.first = first
-        self.follow = follow if follow is not None else []
+    def __init__(self, number, is_terminal=False, name=None):
         self.is_terminal = is_terminal
         self.name = name
         self.number = number
-        NTT.count += 1
+        self.first = self.set_first()
+        self.follow = self.set_follow()
 
-    def set_first(self, first):
-        self.first = first
+    def set_first(self):
+        pass
 
-    def set_follow(self, follow):
-        self.follow = follow
+    def set_follow(self):
+        pass
+
+
