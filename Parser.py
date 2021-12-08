@@ -5,7 +5,6 @@ from scanner import Scanner
 
 
 class Parser:
-
     input_address = 'input'
 
     def __init__(self):
@@ -18,13 +17,20 @@ class Parser:
     def get_next_token(self):
         self.look_ahead = self.scanner.get_next_token()
 
+    def report_missing(self, name):
+        f'#{self.scanner.line_number} : syntax error, missing {name}'
+        pass  # todo: write in file
+
+    def report_illegal_lookahead(self, look_ahead):
+        f'#{self.scanner.line_number} : syntax error, illegal {look_ahead}'
+        pass  # todo: write in file
+
 
 def terminal_matches(la, t):  # todo
     return la == t
 
 
 class TransitionDiagram:
-
     grammar_address = 'c-minus_001'
 
     def __init__(self, parser):
@@ -35,7 +41,11 @@ class TransitionDiagram:
         self.grammar = grammar_file.read().splitlines()
         self.state = self.start_symbols[0]
         self.parser = parser
-        self.saved_state = None
+        self.saved_states = []
+        self.saved_trees = []
+        self.saved_trees.append(Tree())
+        for s in self.start_symbols.values():
+            s.create_condition_on_neighbors()
 
     def create_transition_diagram(self):  # todo
         start_symbols = {}
@@ -113,30 +123,57 @@ class TransitionDiagram:
         if ntt.is_terminal:
             if terminal_matches(look_ahead, ntt.name):
                 self.parser.get_next_token()
-                self.goto(neighbor)
             else:
-                pass  # todo: error
+                self.parser.report_missing(ntt.name)
+                # todo: add to tree
+            self.goto(neighbor)
+
         else:
             new_state = self.start_symbols[ntt.number]
             self.goto(new_state)
-            self.saved_state = neighbor
+            self.saved_states.append(neighbor)
 
     def do_transition(self, look_ahead):
+        # return from non terminal
         if self.state.is_final:
-            self.state = self.saved_state
+            if self.state.start_non_terminal == self.start_symbols[0]:
+                return 'end'  # todo
+            self.state = self.saved_states.pop()
             return  # todo: we can not return - todo: ending parsing
         if isinstance(self.state, StartState):
             for ntt, neighbor, condition in self.state.neighbors:
                 if look_ahead in condition:
                     self.handle_transition(neighbor, ntt, look_ahead)
                     return
-            # todo: error based on follow
+            # errors:
+            if self.all_arcs_terminal():
+                ntt, neighbor = self.get_closest_to_final()
+                self.parser.report_missing(ntt.name)
+                self.goto(neighbor)
+                # todo: add to tree
+                return
+            if look_ahead in self.state.start_non_terminal.follow:
+                self.parser.report_missing(self.state.start_non_terminal.name)
+                self.state = self.saved_states.pop(0)  # return from non terminal
+                # todo: add to tree
+            else:
+                self.parser.report_illegal_lookahead(look_ahead)
+                self.parser.get_next_token()
         else:
             ntt, neighbor = self.state.neighbors
             self.handle_transition(neighbor, ntt, look_ahead)
 
     def goto(self, neighbor):
         self.state = neighbor
+
+    def all_arcs_terminal(self):
+        for ntt, neighbor, condition in self.state.neighbors:
+            if not ntt.is_terminal or ntt.name == 'EPSILON':
+                return False
+        return True
+
+    def get_closest_to_final(self):
+        return self.state.neighbors[0]  # todo
 
 
 class State:
@@ -181,7 +218,6 @@ class StartState(State):
 
 
 class NTT:
-
     first_sets_address = 'first_sets.txt'
     first_sets = {}
 
@@ -220,3 +256,12 @@ class NTT:
             for line in content.splitlines():
                 name, follow_set = line.split('\t')
                 NTT.first_sets[name] = follow_set.split(', ')
+
+
+class Tree:
+    def __init__(self, ntt):
+        self.ntt = ntt
+        self.subtrees = []
+
+    def add_subtree(self, tree):
+        self.subtrees.append(tree)
