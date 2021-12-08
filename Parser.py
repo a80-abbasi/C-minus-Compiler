@@ -5,25 +5,46 @@ from scanner import Scanner
 
 
 class Parser:
-    input_address = 'input'
+
+    input_address = 'input.txt'
+    error_address = 'syntax_errors.txt'
+    parse_tree_address = 'parse_tree.txt'
 
     def __init__(self):
         NTT.read_follow_sets()
         NTT.read_first_sets()
         self.td = TransitionDiagram(self)
-        self.scanner = Scanner(Parser.input_address)
-        self.look_ahead = self.scanner.get_next_token()
+        self.error_file = open(file=Parser.error_address, mode='w')
+        self.output_file = open(file=Parser.parse_tree_address, mode='w')
+        self.scanner = Scanner(open(file=Parser.input_address, mode='r'))
+        self.look_ahead = None
+        self.get_next_token()
 
     def get_next_token(self):
-        self.look_ahead = self.scanner.get_next_token()
+        while True:
+            self.look_ahead = self.scanner.get_next_token()
+            token_type, _ = self.look_ahead
+            if token_type != 'WHITESPACE' and token_type != 'COMMENT':
+                break
+
+    def parse(self):
+        while True:
+            parse_tree = self.td.do_transition(self.look_ahead)
+            if parse_tree is not None:
+                self.output_file.write(parse_tree.to_string())
+                self.close_files()
+                break
+
+    def close_files(self):
+        self.scanner.close_files()
+        self.error_file.close()
+        self.output_file.close()
 
     def report_missing(self, name):
-        f'#{self.scanner.line_number} : syntax error, missing {name}'
-        pass  # todo: write in file
+        self.error_file.write(f'#{self.scanner.line_number} : syntax error, missing {name}\n')
 
     def report_illegal_lookahead(self, look_ahead):
-        f'#{self.scanner.line_number} : syntax error, illegal {look_ahead}'
-        pass  # todo: write in file
+        self.error_file.write(f'#{self.scanner.line_number} : syntax error, illegal {look_ahead}\n')
 
 
 def terminal_matches(lookahead, terminal):  # todo
@@ -43,23 +64,24 @@ def get_lookahead_string(look_ahead):
 
 
 class TransitionDiagram:
-    grammar_address = 'c-minus_001'
+
+    grammar_address = 'c-minus_001.txt'
 
     def __init__(self, parser):
         grammar_file = open(file=TransitionDiagram.grammar_address, mode='r')
-        self.start_symbols = self.create_transition_diagram()
+        self.grammar = grammar_file.read().splitlines()
         self.non_terminals = self.create_non_terminals()
         self.terminals = []
-        self.grammar = grammar_file.read().splitlines()
+        self.start_symbols = self.create_transition_diagram()
         self.state = self.start_symbols[0]
         self.parser = parser
         self.saved_states = []
         self.saved_trees = []
-        self.saved_trees.append(Tree(self.state.start_non_terminal))
+        self.saved_trees.append(Tree(self.state.start_non_terminal.name))
         for s in self.start_symbols.values():
             s.create_condition_on_neighbors()
 
-    def create_transition_diagram(self):  # todo
+    def create_transition_diagram(self):
         start_symbols = {}
         state_number = 0
         for non_terminal, rule in enumerate(self.grammar):
@@ -76,24 +98,27 @@ class TransitionDiagram:
                 first_ntt_name, *other_ntt_name = rhs.split()
                 ntt = self.find_ntt(first_ntt_name)
 
-                depth_two_state = State(number=state_number, start_non_terminal=self.non_terminals[non_terminal])
-                start_state.add_neighbor(depth_two_state, ntt)  # first states after start state
-
-                state_number += 1
-
-                temporary_state = depth_two_state  # to make path neighbors
-
-                for other_name in other_ntt_name[0:-1]:
-                    next_ntt = self.find_ntt(other_name)
-                    next_state = State(state_number, self.non_terminals[non_terminal])
+                if len(other_ntt_name) > 0:
+                    depth_two_state = State(number=state_number, start_non_terminal=self.non_terminals[non_terminal])
+                    start_state.add_neighbor(depth_two_state, ntt)  # first states after start state
 
                     state_number += 1
 
-                    temporary_state.add_neighbor(next_state, next_ntt)
-                    temporary_state = next_state
+                    temporary_state = depth_two_state  # to make path neighbors
 
-                # add final state to last path state neighborhood
-                temporary_state.add_neighbor(final_state, self.find_ntt(other_ntt_name[-1]))
+                    for other_name in other_ntt_name[0:-1]:
+                        next_ntt = self.find_ntt(other_name)
+                        next_state = State(state_number, self.non_terminals[non_terminal])
+
+                        state_number += 1
+
+                        temporary_state.add_neighbor(next_state, next_ntt)
+                        temporary_state = next_state
+
+                    # add final state to last path state neighborhood
+                    temporary_state.add_neighbor(final_state, self.find_ntt(other_ntt_name[-1]))
+                else:
+                    start_state.add_neighbor(final_state, ntt)
 
         return start_symbols
 
@@ -149,12 +174,19 @@ class TransitionDiagram:
             self.saved_states.append(neighbor)
             self.add_to_saved_trees(Tree(ntt.name))
 
+    def find_tree(self, name):
+        for idx, tree in enumerate(self.saved_trees):
+            if tree.ntt == name:
+                return idx, tree
+
     def do_transition(self, look_ahead):
         # return from non terminal
         if self.state.is_final:
             # completing tree
-            index = self.saved_trees.index(Tree(self.state.start_non_terminal.name))
-            tree = self.saved_trees[index]
+            # index = self.saved_trees.index(Tree(self.state.start_non_terminal.name))
+            # tree = self.saved_trees[index]
+            # self.find_tree(self.state.start_non_terminal.name)
+            index, tree = self.find_tree(self.state.start_non_terminal.name)
             for i in range(index-1):
                 tree.add_subtree(self.saved_trees.pop(0))
             # return if parsing has ended
@@ -275,7 +307,7 @@ class NTT:
             content = follow_sets_file.read()
             for line in content.splitlines():
                 name, follow_set = line.split('\t')
-                NTT.first_sets[name] = follow_set.split(', ')
+                NTT.follow_sets[name] = follow_set.split(', ')
 
 
 class Tree:
@@ -285,3 +317,18 @@ class Tree:
 
     def add_subtree(self, tree):
         self.subtrees.append(tree)
+
+    def to_string(self, markerStr="|--- ", levelMarkers=[]):
+        emptyStr = " " * len(markerStr)
+        connectionStr = "|" + emptyStr[:-1]
+
+        level = len(levelMarkers)
+        mapper = lambda draw: connectionStr if draw else emptyStr
+        markers = "".join(map(mapper, levelMarkers[:-1]))
+        markers += markerStr if level > 0 else ""
+        res = f"{markers}{self.ntt}\n"
+
+        for i, child in enumerate(self.subtrees):
+            isLast = i == len(self.subtrees) - 1
+            res += child.to_string(markerStr, [*levelMarkers, not isLast])
+        return res
