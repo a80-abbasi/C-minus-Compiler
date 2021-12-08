@@ -5,11 +5,14 @@ from scanner import Scanner
 
 
 class Parser:
-    input_adress = 'input'
+
+    input_address = 'input'
 
     def __init__(self):
+        NTT.read_follow_sets()
+        NTT.read_first_sets()
         self.td = TransitionDiagram(self)
-        self.scanner = Scanner(Parser.input_adress)
+        self.scanner = Scanner(Parser.input_address)
         self.look_ahead = self.scanner.get_next_token()
 
     def get_next_token(self):
@@ -178,6 +181,13 @@ class StartState(State):
 
 
 class NTT:
+
+    first_sets_address = 'first_sets.txt'
+    first_sets = {}
+
+    follow_sets_address = 'follow_sets.txt'
+    follow_sets = {}
+
     def __init__(self, number, is_terminal=False, name=None):
         self.is_terminal = is_terminal
         self.name = name
@@ -186,7 +196,27 @@ class NTT:
         self.follow = self.set_follow()
 
     def set_first(self):
-        pass
+        if not self.is_terminal:
+            return NTT.first_sets[self.name]
+        return [self.name]
 
     def set_follow(self):
-        pass
+        if not self.is_terminal:
+            return NTT.follow_sets[self.name]
+        return None
+
+    @staticmethod
+    def read_first_sets():
+        with open(file=NTT.first_sets_address, mode='r') as first_sets_file:
+            content = first_sets_file.read()
+            for line in content.splitlines():
+                name, first_set = line.split('\t')
+                NTT.first_sets[name] = first_set.split(', ')
+
+    @staticmethod
+    def read_follow_sets():
+        with open(file=NTT.follow_sets_address, mode='r') as follow_sets_file:
+            content = follow_sets_file.read()
+            for line in content.splitlines():
+                name, follow_set = line.split('\t')
+                NTT.first_sets[name] = follow_set.split(', ')

@@ -1,0 +1,45 @@
+Program	$, EPSILON, int, void
+Declaration-list	EPSILON, int, void
+Var-declaration-prime	;, [
+Fun-declaration-prime	(
+Type-specifier	int, void
+Params	int, void
+Param-list	,, EPSILON
+Param-prime	[, EPSILON
+Compound-stmt	{
+Statement-list	EPSILON, break, ;, ID, (, NUM, if, return, {, repeat
+Expression-stmt	break, ;, ID, (, NUM
+Selection-stmt	if
+Else-stmt	endif, else
+Iteration-stmt	repeat
+Return-stmt	return
+Return-stmt-prime	;, ID, (, NUM
+Expression	ID, (, NUM
+B	=, [, (, EPSILON, *, +, -, <, ==
+H	=, *, EPSILON, +, -, <, ==
+C	EPSILON, <, ==
+Relop	<, ==
+D	EPSILON, +, -
+Addop	+, -
+G	*, EPSILON
+Factor	(, ID, NUM
+Var-call-prime	(, [, EPSILON
+Var-prime	[, EPSILON
+Factor-prime	(, EPSILON
+Factor-zegond	(, NUM
+Args	EPSILON, ID, (, NUM
+Arg-list-prime	,, EPSILON
+Declaration-initial	int, void
+Declaration-prime	(, ;, [
+Term	(, ID, NUM
+Term-prime	(, EPSILON, *
+Term-zegond	(, NUM
+Declaration	int, void
+Param	int, void
+Additive-expression	(, ID, NUM
+Additive-expression-zegond	(, NUM
+Simple-expression-zegond	(, NUM
+Additive-expression-prime	(, EPSILON, *, +, -
+Simple-expression-prime	(, EPSILON, *, +, -, <, ==
+Arg-list	ID, (, NUM
+Statement	break, ;, ID, (, NUM, if, return, {, repeat
