@@ -28,13 +28,24 @@ class TransitionDiagram:
 
 
 class State:
-    def __init__(self, number, ntt, is_final=False, neighbors=None):
+    def __init__(self, number, is_final=False, neighbors=None):
         self.number = number
         self.is_final = is_final
-        self.neighbors = neighbors if neighbors is not None else {}
+        self.neighbors = neighbors
 
     def add_neighbor(self, neighbor, input):  # input is an NTT
-        self.neighbors[input] = neighbor
+        self.neighbors = input, neighbor
+
+
+class StartState(State):
+
+    def __init__(self, number, start_terminal, is_final=False, neighbors=None):
+        super().__init__(number, is_final, neighbors)
+        self.start_terminal = start_terminal
+        self.neighbors = neighbors if neighbors is not None else []
+
+    def add_neighbor(self, neighbor, input):
+        self.neighbors.append((input, neighbor))
 
 
 class NTT:
