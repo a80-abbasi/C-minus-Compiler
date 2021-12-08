@@ -26,8 +26,20 @@ class Parser:
         pass  # todo: write in file
 
 
-def terminal_matches(la, t):  # todo
-    return la == t
+def terminal_matches(lookahead, terminal):  # todo
+    type, value = lookahead
+    if type == 'ID' or type == 'NUM':
+        return type == terminal
+    elif type == 'KEYWORD' or 'SYMBOL':
+        return value == terminal
+    elif terminal == '$':
+        return value is None and type is None
+    return False
+
+
+def get_lookahead_string(look_ahead):
+    type, value = look_ahead
+    return f'({type}, {value})'
 
 
 class TransitionDiagram:
@@ -43,7 +55,7 @@ class TransitionDiagram:
         self.parser = parser
         self.saved_states = []
         self.saved_trees = []
-        self.saved_trees.append(Tree())
+        self.saved_trees.append(Tree(self.state.start_non_terminal))
         for s in self.start_symbols.values():
             s.create_condition_on_neighbors()
 
@@ -119,30 +131,40 @@ class TransitionDiagram:
             non_terminals.append(non_terminal)
         return non_terminals
 
+    def add_to_saved_trees(self, subtree):
+        self.saved_trees.insert(0, subtree)
+
     def handle_transition(self, neighbor, ntt, look_ahead):
         if ntt.is_terminal:
             if terminal_matches(look_ahead, ntt.name):
                 self.parser.get_next_token()
+                self.add_to_saved_trees(Tree(get_lookahead_string(self.parser.look_ahead)))
+                self.goto(neighbor)
             else:
                 self.parser.report_missing(ntt.name)
-                # todo: add to tree
-            self.goto(neighbor)
-
+                self.goto(neighbor)
         else:
             new_state = self.start_symbols[ntt.number]
             self.goto(new_state)
             self.saved_states.append(neighbor)
+            self.add_to_saved_trees(Tree(ntt.name))
 
     def do_transition(self, look_ahead):
         # return from non terminal
         if self.state.is_final:
+            # completing tree
+            index = self.saved_trees.index(Tree(self.state.start_non_terminal.name))
+            tree = self.saved_trees[index]
+            for i in range(index-1):
+                tree.add_subtree(self.saved_trees.pop(0))
+            # return if parsing has ended
             if self.state.start_non_terminal == self.start_symbols[0]:
-                return 'end'  # todo
+                return self.saved_trees.pop(0)
             self.state = self.saved_states.pop()
-            return  # todo: we can not return - todo: ending parsing
+            return
         if isinstance(self.state, StartState):
             for ntt, neighbor, condition in self.state.neighbors:
-                if look_ahead in condition:
+                if any(map(lambda x: terminal_matches(look_ahead, x), condition)):
                     self.handle_transition(neighbor, ntt, look_ahead)
                     return
             # errors:
@@ -150,12 +172,10 @@ class TransitionDiagram:
                 ntt, neighbor = self.get_closest_to_final()
                 self.parser.report_missing(ntt.name)
                 self.goto(neighbor)
-                # todo: add to tree
                 return
             if look_ahead in self.state.start_non_terminal.follow:
                 self.parser.report_missing(self.state.start_non_terminal.name)
                 self.state = self.saved_states.pop(0)  # return from non terminal
-                # todo: add to tree
             else:
                 self.parser.report_illegal_lookahead(look_ahead)
                 self.parser.get_next_token()
