@@ -1,17 +1,36 @@
 # A:  0---B--->1
 # 0 and 1: State
 # B: NTT (NonTerminal or Terminal! change it if you want)
+from scanner import Scanner
 
-class TransitionDiagram:
 
-    grammar_address = 'c-minus_001'
+class Parser:
+    input_adress = 'input'
 
     def __init__(self):
-        start_symbols = self.create_transition_diagram()
+        self.td = TransitionDiagram(self)
+        self.scanner = Scanner(Parser.input_adress)
+        self.look_ahead = self.scanner.get_next_token()
+
+    def get_next_token(self):
+        self.look_ahead = self.scanner.get_next_token()
+
+
+def terminal_matches(la, t):  # todo
+    return la == t
+
+
+class TransitionDiagram:
+    grammar_address = 'c-minus_001'
+
+    def __init__(self, parser):
+        self.start_symbols = self.create_transition_diagram()
         grammar_file = open(file=TransitionDiagram.grammar_address, mode='r')
         self.non_terminals = self.create_non_terminals()
         self.grammar = grammar_file.read().splitlines()
-        self.state = start_symbols[0]
+        self.state = self.start_symbols[0]
+        self.parser = parser
+        self.saved_state = None
 
     def create_transition_diagram(self):  # todo
         start_symbols = {}
@@ -30,22 +49,32 @@ class TransitionDiagram:
             non_terminals.append(non_terminal)
         return non_terminals
 
+    def handle_transition(self, neighbor, ntt, look_ahead):
+        if ntt.is_terminal:
+            if terminal_matches(look_ahead, ntt.name):
+                self.parser.get_next_token()
+                self.goto(neighbor)
+            else:
+                pass
+        else:
+            new_state = self.start_symbols[ntt.number]
+            self.goto(new_state)
+            self.saved_state = neighbor
 
-    # def do_transition(self, look_ahead):
-    #     for ntt, neighbor in self.state.neighbors.items():
-    #         if self.should_do_with_first(self, ntt, look_ahead)
-    #             self.state = neighbor
-    #             return
-    #     if
-    #
-    # def should_do_with_first(self, cur_state, ntt, look_ahead):
-    #     if look_ahead in ntt.first:
-    #         return True
-    #     if 'epsilon' in ntt.first:  # todo: epsilon
-    #         for t, neigh in cur_state.neighbors[ntt].items():
-    #             if self.should_do_with_first(cur_state.neighbors[ntt], t, look_ahead):
-    #                 return True
-    #     return False
+
+    def do_transition(self, look_ahead):
+        if self.state.is_final:
+            self.state = self.saved_state
+            return  # todo: we can not return - what
+        if isinstance(self, StartState):
+            for ntt, neighbor, condition in self.neighbors:
+                if look_ahead in condition:
+                    self.handle_transition(neighbor, ntt, look_ahead)
+        else:
+            pass
+
+    def goto(self, neighbor):
+        self.state = neighbor
 
 
 class State:
@@ -68,6 +97,25 @@ class StartState(State):
     def add_neighbor(self, neighbor, input):
         self.neighbors.append((input, neighbor))
 
+    def create_condition_on_neighbors(self):
+        new_neighbors = []
+        for input, neighbor in self.neighbors:
+            condition = []
+            cur = neighbor
+            ntt = input
+            # first
+            while True:
+                if cur.is_final:
+                    condition.extend(ntt.first)
+                    break
+                first = list(set(ntt.first).difference('epsilon'))
+                condition.extend(first)
+                ntt, cur = cur.neighbors
+            if 'epsilon' in condition:
+                condition.extend(self.start_terminal.follow)
+            new_neighbors.append((input, neighbor, condition))
+        self.neighbors = new_neighbors
+
 
 class NTT:
     def __init__(self, number, is_terminal=False, name=None):
@@ -82,5 +130,3 @@ class NTT:
 
     def set_follow(self):
         pass
-
-
