@@ -55,23 +55,25 @@ class TransitionDiagram:
                 self.parser.get_next_token()
                 self.goto(neighbor)
             else:
-                pass
+                pass  # todo: error
         else:
             new_state = self.start_symbols[ntt.number]
             self.goto(new_state)
             self.saved_state = neighbor
 
-
     def do_transition(self, look_ahead):
         if self.state.is_final:
             self.state = self.saved_state
-            return  # todo: we can not return - what
-        if isinstance(self, StartState):
-            for ntt, neighbor, condition in self.neighbors:
+            return  # todo: we can not return - todo: ending parsing
+        if isinstance(self.state, StartState):
+            for ntt, neighbor, condition in self.state.neighbors:
                 if look_ahead in condition:
                     self.handle_transition(neighbor, ntt, look_ahead)
+                    return
+            # todo: error based on follow
         else:
-            pass
+            ntt, neighbor = self.state.neighbors
+            self.handle_transition(neighbor, ntt, look_ahead)
 
     def goto(self, neighbor):
         self.state = neighbor
@@ -111,6 +113,7 @@ class StartState(State):
                 first = list(set(ntt.first).difference('epsilon'))
                 condition.extend(first)
                 ntt, cur = cur.neighbors
+            # follow
             if 'epsilon' in condition:
                 condition.extend(self.start_terminal.follow)
             new_neighbors.append((input, neighbor, condition))
