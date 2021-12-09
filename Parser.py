@@ -5,7 +5,6 @@ from scanner import Scanner
 
 
 class Parser:
-
     input_address = 'input.txt'
     error_address = 'syntax_errors.txt'
     parse_tree_address = 'parse_tree.txt'
@@ -61,7 +60,6 @@ def get_lookahead_string(look_ahead):
 
 
 class TransitionDiagram:
-
     grammar_address = 'c-minus_001.txt'
 
     def __init__(self, parser):
@@ -85,8 +83,7 @@ class TransitionDiagram:
             start_state = StartState(state_number, self.non_terminals[non_terminal])
             state_number += 1
 
-            final_state = State(state_number, self.non_terminals[non_terminal], True)
-            state_number += 1
+            final_state = State(-2, self.non_terminals[non_terminal], True)
 
             start_symbols[non_terminal] = start_state  # Add start state to output
             _, right_hand_sides = rule.split('->')
@@ -116,6 +113,9 @@ class TransitionDiagram:
                     temporary_state.add_neighbor(final_state, self.find_ntt(other_ntt_name[-1]))
                 else:
                     start_state.add_neighbor(final_state, ntt)
+
+            final_state.number = state_number
+            state_number += 1
 
         return start_symbols
 
@@ -158,9 +158,12 @@ class TransitionDiagram:
 
     def handle_transition(self, neighbor, ntt, look_ahead):
         if ntt.is_terminal:
-            if terminal_matches(look_ahead, ntt.name):
-                self.parser.get_next_token()
+            if ntt.name == 'epsilon':
+                self.add_to_saved_trees(Tree('epsilon'))
+                self.goto(neighbor)
+            elif terminal_matches(look_ahead, ntt.name):
                 self.add_to_saved_trees(Tree(get_lookahead_string(self.parser.look_ahead)))
+                self.parser.get_next_token()
                 self.goto(neighbor)
             else:
                 self.parser.report_missing(ntt.name)
@@ -181,17 +184,15 @@ class TransitionDiagram:
         if self.state.is_final:
             # completing tree
             index, tree = self.find_tree(self.state.start_non_terminal.name)
-            for i in range(index-1):
+            for i in range(index):
                 tree.add_subtree(self.saved_trees.pop(0))
             # return if parsing has ended
             if self.state.start_non_terminal == self.start_symbols[0]:
-                if look_ahead != [None, None]:
-                    self.parser.report_error('illegal', look_ahead)
+                if look_ahead != (None, None):
+                    self.parser.report_error('illegal', get_lookahead_string(look_ahead))
                     return
                 return self.saved_trees.pop(0)
-            if look_ahead == [None, None]:
-                self.parser.report_error('Unexpected ', 'EOF')
-                return self.create_tree()
+
             self.state = self.saved_states.pop()
             return
         if isinstance(self.state, StartState):
@@ -209,6 +210,9 @@ class TransitionDiagram:
                 self.parser.report_error('missing', self.state.start_non_terminal.name)
                 self.state = self.saved_states.pop(0)  # return from non terminal
             else:
+                if look_ahead == (None, None):
+                    self.parser.report_error('Unexpected ', 'EOF')
+                    return self.create_tree()
                 self.parser.report_error('illegal', look_ahead)
                 self.parser.get_next_token()
         else:
@@ -220,7 +224,7 @@ class TransitionDiagram:
 
     def all_arcs_terminal(self):
         for ntt, neighbor, condition in self.state.neighbors:
-            if not ntt.is_terminal or ntt.name == 'EPSILON':
+            if not ntt.is_terminal or ntt.name == 'epsilon':
                 return False
         return True
 
@@ -228,14 +232,14 @@ class TransitionDiagram:
         return self.state.neighbors[0]  # todo
 
     def create_tree(self):
-        while len(self.saved_trees) != 1:
+        while True:
             index, tree = self.find_tree(self.state.start_non_terminal.name)
-            for i in range(index - 1):
+            for i in range(index):
                 tree.add_subtree(self.saved_trees.pop(0))
+            if len(self.saved_trees) == 1:
+                break
             self.state = self.saved_states.pop()
         return self.saved_trees.pop(0)
-
-
 
 
 class State:
@@ -261,21 +265,23 @@ class StartState(State):
     def create_condition_on_neighbors(self):
         new_neighbors = []
         for input, neighbor in self.neighbors:
-            condition = []
+            condition = set()
             cur = neighbor
             ntt = input
             # first
             while True:
                 if cur.is_final:
-                    condition.extend(ntt.first)
+                    condition.update(ntt.first)
                     break
-                first = list(set(ntt.first).difference('epsilon'))
-                condition.extend(first)
+                first = set(ntt.first).difference('epsilon')
+                condition.update(first)
+                if len(first) == len(ntt.first):
+                    break
                 ntt, cur = cur.neighbors
             # follow
             if 'epsilon' in condition:
-                condition.extend(self.start_non_terminal.follow)
-            new_neighbors.append((input, neighbor, condition))
+                condition.update(self.start_non_terminal.follow)
+            new_neighbors.append((input, neighbor, list(condition)))
         self.neighbors = new_neighbors
 
 

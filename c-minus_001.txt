@@ -1,5 +1,5 @@
-Program -> Declaration-list $
-Declaration-list -> Declaration Declaration-list | EPSILON 
+Program -> Declaration-list
+Declaration-list -> Declaration Declaration-list | epsilon 
 Declaration -> Declaration-initial Declaration-prime
 Declaration-initial ->  Type-specifier ID
 Declaration-prime -> Fun-declaration-prime | Var-declaration-prime
@@ -7,11 +7,11 @@ Var-declaration-prime -> ; | [ NUM ] ;
 Fun-declaration-prime ->  ( Params ) Compound-stmt
 Type-specifier -> int | void
 Params -> int ID Param-prime Param-list | void
-Param-list -> , Param Param-list | EPSILON
+Param-list -> , Param Param-list | epsilon
 Param -> Declaration-initial Param-prime
-Param-prime -> [  ] | EPSILON
+Param-prime -> [  ] | epsilon
 Compound-stmt -> { Declaration-list Statement-list }
-Statement-list -> Statement Statement-list | EPSILON
+Statement-list -> Statement Statement-list | epsilon
 Statement -> Expression-stmt | Compound-stmt | Selection-stmt | Iteration-stmt | Return-stmt
 Expression-stmt -> Expression ; | break ; | ;
 Selection-stmt -> if ( Expression ) Statement Else-stmt
@@ -24,22 +24,22 @@ B -> = Expression | [ Expression ] H | Simple-expression-prime
 H -> = Expression | G D C
 Simple-expression-zegond -> Additive-expression-zegond C
 Simple-expression-prime -> Additive-expression-prime C
-C -> Relop Additive-expression | EPSILON
+C -> Relop Additive-expression | epsilon
 Relop -> < | ==
 Additive-expression -> Term D
 Additive-expression-prime -> Term-prime D
 Additive-expression-zegond -> Term-zegond D
-D -> Addop Term D | EPSILON
+D -> Addop Term D | epsilon
 Addop -> + | -
 Term -> Factor G
 Term-prime -> Factor-prime G
 Term-zegond -> Factor-zegond G
-G -> * Factor G | EPSILON
+G -> * Factor G | epsilon
 Factor -> ( Expression ) | ID Var-call-prime | NUM
 Var-call-prime -> ( Args ) | Var-prime
-Var-prime -> [ Expression ] | EPSILON
-Factor-prime -> ( Args ) | EPSILON
+Var-prime -> [ Expression ] | epsilon
+Factor-prime -> ( Args ) | epsilon
 Factor-zegond -> ( Expression ) | NUM
-Args -> Arg-list | EPSILON
+Args -> Arg-list | epsilon
 Arg-list -> Expression Arg-list-prime
-Arg-list-prime -> , Expression Arg-list-prime | EPSILON
+Arg-list-prime -> , Expression Arg-list-prime | epsilon
