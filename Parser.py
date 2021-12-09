@@ -40,11 +40,8 @@ class Parser:
         self.error_file.close()
         self.output_file.close()
 
-    def report_missing(self, name):
-        self.error_file.write(f'#{self.scanner.line_number} : syntax error, missing {name}\n')
-
-    def report_illegal_lookahead(self, look_ahead):
-        self.error_file.write(f'#{self.scanner.line_number} : syntax error, illegal {look_ahead}\n')
+    def report_error(self, type, name):
+        self.error_file.write(f'#{self.scanner.line_number} : syntax error, {type} {name}\n')
 
 
 def terminal_matches(lookahead, terminal):  # todo
@@ -183,15 +180,18 @@ class TransitionDiagram:
         # return from non terminal
         if self.state.is_final:
             # completing tree
-            # index = self.saved_trees.index(Tree(self.state.start_non_terminal.name))
-            # tree = self.saved_trees[index]
-            # self.find_tree(self.state.start_non_terminal.name)
             index, tree = self.find_tree(self.state.start_non_terminal.name)
             for i in range(index-1):
                 tree.add_subtree(self.saved_trees.pop(0))
             # return if parsing has ended
             if self.state.start_non_terminal == self.start_symbols[0]:
+                if look_ahead != [None, None]:
+                    self.parser.report_error('illegal', look_ahead)
+                    return
                 return self.saved_trees.pop(0)
+            if look_ahead == [None, None]:
+                self.parser.report_error('Unexpected ', 'EOF')
+                return self.create_tree()
             self.state = self.saved_states.pop()
             return
         if isinstance(self.state, StartState):
@@ -206,10 +206,10 @@ class TransitionDiagram:
                 self.goto(neighbor)
                 return
             if look_ahead in self.state.start_non_terminal.follow:
-                self.parser.report_missing(self.state.start_non_terminal.name)
+                self.parser.report_error('missing', self.state.start_non_terminal.name)
                 self.state = self.saved_states.pop(0)  # return from non terminal
             else:
-                self.parser.report_illegal_lookahead(look_ahead)
+                self.parser.report_error('illegal', look_ahead)
                 self.parser.get_next_token()
         else:
             ntt, neighbor = self.state.neighbors
@@ -226,6 +226,16 @@ class TransitionDiagram:
 
     def get_closest_to_final(self):
         return self.state.neighbors[0]  # todo
+
+    def create_tree(self):
+        while len(self.saved_trees) != 1:
+            index, tree = self.find_tree(self.state.start_non_terminal.name)
+            for i in range(index - 1):
+                tree.add_subtree(self.saved_trees.pop(0))
+            self.state = self.saved_states.pop()
+        return self.saved_trees.pop(0)
+
+
 
 
 class State:
