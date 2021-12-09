@@ -318,17 +318,17 @@ class Tree:
     def add_subtree(self, tree):
         self.subtrees.append(tree)
 
-    def to_string(self, markerStr="|--- ", levelMarkers=[]):
-        emptyStr = " " * len(markerStr)
-        connectionStr = "|" + emptyStr[:-1]
+    def to_string(self, marker_str="|--- ", level_markers=[]):
+        empty_str = " " * len(marker_str)
+        connection_str = "|" + empty_str[:-1]
 
-        level = len(levelMarkers)
-        mapper = lambda draw: connectionStr if draw else emptyStr
-        markers = "".join(map(mapper, levelMarkers[:-1]))
-        markers += markerStr if level > 0 else ""
+        level = len(level_markers)
+        markers = "".join(map(lambda draw: connection_str if draw else empty_str, level_markers[:-1]))
+        markers += marker_str if level > 0 else ""
         res = f"{markers}{self.ntt}\n"
 
         for i, child in enumerate(self.subtrees):
-            isLast = i == len(self.subtrees) - 1
-            res += child.to_string(markerStr, [*levelMarkers, not isLast])
+            is_last = i == len(self.subtrees) - 1
+            res += child.to_string(marker_str, [*level_markers, not is_last])
+
         return res
