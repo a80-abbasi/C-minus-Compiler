@@ -2,5 +2,7 @@ input.txt
 tokens.txt
 lexical_errors.txt
 symbol_table.txt
+parse_tree.txt
+syntax_errors.txt
 PA2_testcases1.3
 PA1_testcases1.3
