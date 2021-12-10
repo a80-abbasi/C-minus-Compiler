@@ -47,7 +47,7 @@ def terminal_matches(lookahead, terminal):  # todo
     type, value = lookahead
     if type == 'ID' or type == 'NUM':
         return type == terminal
-    elif type == 'KEYWORD' or 'SYMBOL':
+    elif type == 'KEYWORD' or type == 'SYMBOL':
         return value == terminal
     elif terminal == '$':
         return value is None and type is None
@@ -55,6 +55,8 @@ def terminal_matches(lookahead, terminal):  # todo
 
 
 def get_lookahead_string(look_ahead):
+    if terminal_matches(look_ahead, '$'):
+        return '$'
     type, value = look_ahead
     return f'({type}, {value})'
 
@@ -153,8 +155,11 @@ class TransitionDiagram:
             non_terminals.append(non_terminal)
         return non_terminals
 
-    def add_to_saved_trees(self, subtree):
-        self.saved_trees.insert(0, subtree)
+    def add_to_saved_trees(self, subtree, new=False):
+        if new:
+            self.saved_trees.insert(0, subtree)
+        else:
+            self.saved_trees[0].add_subtree(subtree)
 
     def handle_transition(self, neighbor, ntt, look_ahead):
         if ntt.is_terminal:
@@ -172,7 +177,7 @@ class TransitionDiagram:
             new_state = self.start_symbols[ntt.number]
             self.goto(new_state)
             self.saved_states.append(neighbor)
-            self.add_to_saved_trees(Tree(ntt.name))
+            self.add_to_saved_trees(Tree(ntt.name), new=True)
 
     def find_tree(self, name):
         for idx, tree in enumerate(self.saved_trees):
@@ -182,17 +187,15 @@ class TransitionDiagram:
     def do_transition(self, look_ahead):
         # return from non terminal
         if self.state.is_final:
-            # completing tree
-            index, tree = self.find_tree(self.state.start_non_terminal.name)
-            for i in range(index):
-                tree.add_subtree(self.saved_trees.pop(0))
             # return if parsing has ended
-            if self.state.start_non_terminal == self.start_symbols[0]:
+            if self.state.number == 2:
                 if look_ahead != (None, None):
                     self.parser.report_error('illegal', get_lookahead_string(look_ahead))
                     return
-                return self.saved_trees.pop(0)
 
+                return self.saved_trees.pop(0)
+            # completing tree
+            self.add_to_saved_trees(self.saved_trees.pop(0))
             self.state = self.saved_states.pop()
             return
         if isinstance(self.state, StartState):
@@ -233,13 +236,9 @@ class TransitionDiagram:
 
     def create_tree(self):
         while True:
-            index, tree = self.find_tree(self.state.start_non_terminal.name)
-            for i in range(index):
-                tree.add_subtree(self.saved_trees.pop(0))
             if len(self.saved_trees) == 1:
-                break
-            self.state = self.saved_states.pop()
-        return self.saved_trees.pop(0)
+                return self.saved_trees.pop(0)
+            self.add_to_saved_trees(self.saved_trees.pop(0))
 
 
 class State:
@@ -263,6 +262,10 @@ class StartState(State):
         self.neighbors.append((input, neighbor))
 
     def create_condition_on_neighbors(self):
+        # if self.start_non_terminal.name == 'Additive-expression-prime':
+        #     print('hi!')
+        #     print('hi!')
+
         new_neighbors = []
         for input, neighbor in self.neighbors:
             condition = set()
@@ -273,7 +276,7 @@ class StartState(State):
                 if cur.is_final:
                     condition.update(ntt.first)
                     break
-                first = set(ntt.first).difference('epsilon')
+                first = set(ntt.first).difference(['epsilon'])
                 condition.update(first)
                 if len(first) == len(ntt.first):
                     break
