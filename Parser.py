@@ -54,12 +54,21 @@ def terminal_matches(lookahead, terminal):  # todo
     return False
 
 
-def get_lookahead_string(look_ahead):
+def get_lookahead_string_as_tuple(look_ahead):
     if terminal_matches(look_ahead, '$'):
         return '$'
     type, value = look_ahead
     return f'({type}, {value})'
 
+
+def get_lookahead_string(lookahead):
+    type, value = lookahead
+    if type == 'KEYWORD' or type == 'SYMBOL':
+        return value
+    elif type == 'ID' or type == 'NUM':
+        return type
+    else:
+        return False
 
 class TransitionDiagram:
     grammar_address = 'c-minus_001.txt'
@@ -73,6 +82,7 @@ class TransitionDiagram:
         self.state = self.start_symbols[0]
         self.parser = parser
         self.saved_states = []
+        self.saved_states.append(self.state.neighbors[0][1])
         self.saved_trees = []
         self.saved_trees.append(Tree(self.state.start_non_terminal.name))
         for s in self.start_symbols.values():
@@ -167,11 +177,11 @@ class TransitionDiagram:
                 self.add_to_saved_trees(Tree('epsilon'))
                 self.goto(neighbor)
             elif terminal_matches(look_ahead, ntt.name):
-                self.add_to_saved_trees(Tree(get_lookahead_string(self.parser.look_ahead)))
+                self.add_to_saved_trees(Tree(get_lookahead_string_as_tuple(self.parser.look_ahead)))
                 self.parser.get_next_token()
                 self.goto(neighbor)
             else:
-                self.parser.report_missing(ntt.name)
+                self.parser.report_error('missing', ntt.name)
                 self.goto(neighbor)
         else:
             new_state = self.start_symbols[ntt.number]
@@ -188,11 +198,12 @@ class TransitionDiagram:
         # return from non terminal
         if self.state.is_final:
             # return if parsing has ended
-            if self.state.number == 2:
+            if self.state.number == 1:
                 if look_ahead != (None, None):
                     self.parser.report_error('illegal', get_lookahead_string(look_ahead))
+                    self.parser.get_next_token()
                     return
-
+                self.add_to_saved_trees(Tree('$'))
                 return self.saved_trees.pop(0)
             # completing tree
             self.add_to_saved_trees(self.saved_trees.pop(0))
@@ -205,18 +216,19 @@ class TransitionDiagram:
                     return
             # errors:
             if self.all_arcs_terminal():
-                ntt, neighbor = self.get_closest_to_final()
-                self.parser.report_missing(ntt.name)
+                ntt, neighbor, condition = self.get_closest_to_final()
+                self.parser.report_error('missing', ntt.name)
                 self.goto(neighbor)
                 return
-            if look_ahead in self.state.start_non_terminal.follow:
+            if get_lookahead_string(look_ahead) in self.state.start_non_terminal.follow:
                 self.parser.report_error('missing', self.state.start_non_terminal.name)
-                self.state = self.saved_states.pop(0)  # return from non terminal
+                self.state = self.saved_states.pop()  # return from non terminal
             else:
                 if look_ahead == (None, None):
                     self.parser.report_error('Unexpected ', 'EOF')
+                    self.saved_trees.pop(0)
                     return self.create_tree()
-                self.parser.report_error('illegal', look_ahead)
+                self.parser.report_error('illegal', get_lookahead_string(look_ahead))
                 self.parser.get_next_token()
         else:
             ntt, neighbor = self.state.neighbors
@@ -227,7 +239,7 @@ class TransitionDiagram:
 
     def all_arcs_terminal(self):
         for ntt, neighbor, condition in self.state.neighbors:
-            if not ntt.is_terminal or ntt.name == 'epsilon':
+            if not ntt.is_terminal or ntt.name == 'epsilon' or ntt.name == '$':
                 return False
         return True
 
@@ -330,8 +342,8 @@ class NTT:
 
 
 class Tree:
-    def __init__(self, ntt):
-        self.ntt = ntt
+    def __init__(self, name):
+        self.ntt = name
         self.subtrees = []
 
     def add_subtree(self, tree):
