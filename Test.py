@@ -34,6 +34,14 @@ class Test(unittest.TestCase):
                 self.assertMultiLineEqual(Test.output(f'PA1_testcases1.3/T{i:02d}/lexical_errors.txt'), Test.output('lexical_errors.txt'))
                 self.assertMultiLineEqual(Test.output(f'PA1_testcases1.3/T{i:02d}/symbol_table.txt'), Test.output('symbol_table.txt'))
 
+    def test_syntax(self):
+        for i in range(1, 11):
+            with self.subTest(i=i):
+                copyfile(f'PA2_testcases1.3/T{i:02d}/input.txt', 'input.txt')
+                os.system('python compiler.py')
+                self.assertMultiLineEqual(Test.output(f'PA2_testcases1.3/T{i:02d}/parse_tree.txt'), Test.output('parse_tree.txt'))
+                self.assertMultiLineEqual(Test.output(f'PA2_testcases1.3/T{i:02d}/syntax_error.txt'), Test.output('syntax_error.txt'))
+
 
 
 

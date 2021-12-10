@@ -2,6 +2,7 @@
 # 0 and 1: State
 # B: NTT (NonTerminal or Terminal! change it if you want)
 from scanner import Scanner
+from anytree import Node, RenderTree
 
 
 class Parser:
@@ -17,6 +18,7 @@ class Parser:
         self.output_file = open(file=Parser.parse_tree_address, mode='w')
         self.scanner = Scanner(open(file=Parser.input_address, mode='r'))
         self.look_ahead = None
+        self.has_error = False
         self.get_next_token()
 
     def get_next_token(self):
@@ -30,16 +32,23 @@ class Parser:
         while True:
             parse_tree = self.td.do_transition(self.look_ahead)
             if parse_tree is not None:
-                self.output_file.write(parse_tree.to_string())
+                output_tree = make_anytree(parse_tree)
+
+                for pre, fill, node in RenderTree(output_tree):
+                    self.output_file.write("%s%s\n" % (pre, node.name))
+
                 self.close_files()
                 break
 
     def close_files(self):
         self.scanner.close_files()
+        if not self.has_error:
+            self.error_file.write('There is no syntax error.')
         self.error_file.close()
         self.output_file.close()
 
     def report_error(self, type, name):
+        self.has_error = True
         self.error_file.write(f'#{self.scanner.line_number} : syntax error, {type} {name}\n')
 
 
@@ -69,6 +78,17 @@ def get_lookahead_string(lookahead):
         return type
     else:
         return False
+
+
+def make_anytree(tree, parent=None):
+    if parent is None:
+        root = Node(tree.ntt)
+    else:
+        root = Node(tree.ntt, parent=parent)
+    for subtree in tree.subtrees:
+        make_anytree(subtree, root)
+    return root
+
 
 class TransitionDiagram:
     grammar_address = 'c-minus_001.txt'
@@ -130,6 +150,11 @@ class TransitionDiagram:
             state_number += 1
 
         return start_symbols
+
+    def output_transition_diagram(self):
+        for non_terminal, start_symbol in self.start_symbols.items():
+            print(non_terminal)
+            print(f'{start_symbol.number}, {start_symbol.is_final}')
 
     def is_non_terminal(self, name):
         for non_terminal in self.non_terminals:
@@ -274,7 +299,7 @@ class StartState(State):
         self.neighbors.append((input, neighbor))
 
     def create_condition_on_neighbors(self):
-        # if self.start_non_terminal.name == 'Additive-expression-prime':
+        # if self.start_non_terminal.name == '├── Additive-expression-prime':
         #     print('hi!')
         #     print('hi!')
 
@@ -348,18 +373,3 @@ class Tree:
 
     def add_subtree(self, tree):
         self.subtrees.append(tree)
-
-    def to_string(self, marker_str="|--- ", level_markers=[]):
-        empty_str = " " * len(marker_str)
-        connection_str = "|" + empty_str[:-1]
-
-        level = len(level_markers)
-        markers = "".join(map(lambda draw: connection_str if draw else empty_str, level_markers[:-1]))
-        markers += marker_str if level > 0 else ""
-        res = f"{markers}{self.ntt}\n"
-
-        for i, child in enumerate(self.subtrees):
-            is_last = i == len(self.subtrees) - 1
-            res += child.to_string(marker_str, [*level_markers, not is_last])
-
-        return res
