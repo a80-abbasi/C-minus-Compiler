@@ -15,7 +15,7 @@ class Parser:
         NTT.read_first_sets()
         self.td = TransitionDiagram(self)
         self.error_file = open(file=Parser.error_address, mode='w')
-        self.output_file = open(file=Parser.parse_tree_address, mode='w')
+        self.output_file = open(file=Parser.parse_tree_address, mode='w', encoding='utf-8')
         self.scanner = Scanner(open(file=Parser.input_address, mode='r'))
         self.look_ahead = None
         self.has_error = False
@@ -82,9 +82,9 @@ def get_lookahead_string(lookahead):
 
 def make_anytree(tree, parent=None):
     if parent is None:
-        root = Node(tree.ntt)
+        root = Node(tree.name)
     else:
-        root = Node(tree.ntt, parent=parent)
+        root = Node(tree.name, parent=parent)
     for subtree in tree.subtrees:
         make_anytree(subtree, root)
     return root
@@ -216,7 +216,7 @@ class TransitionDiagram:
 
     def find_tree(self, name):
         for idx, tree in enumerate(self.saved_trees):
-            if tree.ntt == name:
+            if tree.name == name:
                 return idx, tree
 
     def do_transition(self, look_ahead):
@@ -240,17 +240,18 @@ class TransitionDiagram:
                     self.handle_transition(neighbor, ntt, look_ahead)
                     return
             # errors:
-            if self.all_arcs_terminal():
-                ntt, neighbor, condition = self.get_closest_to_final()
-                self.parser.report_error('missing', ntt.name)
-                self.goto(neighbor)
-                return
+            # if self.all_arcs_terminal():
+            #     ntt, neighbor, condition = self.get_closest_to_final()
+            #     self.parser.report_error('missing', ntt.name)
+            #     self.goto(neighbor)
+            #     return
             if get_lookahead_string(look_ahead) in self.state.start_non_terminal.follow:
                 self.parser.report_error('missing', self.state.start_non_terminal.name)
                 self.state = self.saved_states.pop()  # return from non terminal
+                self.saved_trees.pop(0)
             else:
                 if look_ahead == (None, None):
-                    self.parser.report_error('Unexpected ', 'EOF')
+                    self.parser.report_error('Unexpected', 'EOF')
                     self.saved_trees.pop(0)
                     return self.create_tree()
                 self.parser.report_error('illegal', get_lookahead_string(look_ahead))
@@ -368,7 +369,7 @@ class NTT:
 
 class Tree:
     def __init__(self, name):
-        self.ntt = name
+        self.name = name
         self.subtrees = []
 
     def add_subtree(self, tree):

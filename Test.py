@@ -37,10 +37,10 @@ class Test(unittest.TestCase):
     def test_syntax(self):
         for i in range(1, 11):
             with self.subTest(i=i):
-                copyfile(f'PA2_testcases1.3/T{i:02d}/input.txt', 'input.txt')
+                copyfile(f'PA2_testcases/T{i:02d}/input.txt', 'input.txt')
                 os.system('python compiler.py')
-                self.assertMultiLineEqual(Test.output(f'PA2_testcases1.3/T{i:02d}/parse_tree.txt'), Test.output('parse_tree.txt'))
-                self.assertMultiLineEqual(Test.output(f'PA2_testcases1.3/T{i:02d}/syntax_error.txt'), Test.output('syntax_error.txt'))
+                self.assertMultiLineEqual(Test.output(f'PA2_testcases/T{i:02d}/parse_tree.txt'), Test.output('parse_tree.txt'))
+                self.assertMultiLineEqual(Test.output(f'PA2_testcases/T{i:02d}/syntax_errors.txt'), Test.output('syntax_errors.txt'))
 
 
 
