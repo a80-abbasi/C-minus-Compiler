@@ -42,8 +42,7 @@ class SymbolTable:
 
 
 class CodeGenerator:
-    def __init__(self, parser):
-        self.parser: Parser = parser
+    def __init__(self):
         self.table = SymbolTable()
         self.stack = []
         self.pb = []
@@ -74,9 +73,9 @@ class CodeGenerator:
         else:
             self.pb[i] = code
 
-    def code_gen(self, action: str):
+    def code_gen(self, action: str, look_ahead):
         if action == 'push':
-            self.push(self.parser.look_ahead)
+            self.push(look_ahead)
         elif action == 'var_declare':
             self.table.add_var(self.stack[-1], self.stack[-2], self.scope)
             self.pop(2)
@@ -122,7 +121,7 @@ class CodeGenerator:
             self.push(self.i)
             self.i += 1
         elif action == 'pid':
-            _, row = self.table.get_row(self.parser.look_ahead)
+            _, row = self.table.get_row(look_ahead)
             self.push(row['addr'])
         elif action == 'assign':
             self.add_op('ASSIGN', self.stack[-1], self.stack[-2])

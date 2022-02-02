@@ -102,7 +102,7 @@ class TransitionDiagram:
         self.start_symbols = self.create_transition_diagram()
         self.state = self.start_symbols[0]
         self.parser = parser
-        self.code_generator = CodeGenerator(parser)
+        self.code_generator = CodeGenerator()
         self.saved_states = []
         self.saved_states.append(self.state.neighbors[0][1])
         self.saved_trees = []
@@ -133,6 +133,7 @@ class TransitionDiagram:
                     first_ntt_name, *other_ntt_name = rhs.split()[1:]
                     ntt = self.find_ntt(first_ntt_name)
 
+                last_action = None
                 if len(other_ntt_name) > 0:
                     last_action = self.find_ntt(other_ntt_name[-1])
                     if isinstance(last_action, str):
@@ -228,7 +229,7 @@ class TransitionDiagram:
 
     def handle_transition(self, neighbor, ntt, look_ahead, semantic_action, after_action):
         if semantic_action is not None:
-            self.code_generator.code_gen(semantic_action)
+            self.code_gen(semantic_action)
         if ntt.is_terminal:
             if ntt.name == 'epsilon':
                 self.add_to_saved_trees(Tree('epsilon'))
@@ -245,6 +246,8 @@ class TransitionDiagram:
             self.goto(new_state)
             self.saved_states.append(neighbor)
             self.add_to_saved_trees(Tree(ntt.name), new=True)
+        if after_action is not None:
+            self.code_gen(after_action)
 
     def find_tree(self, name):
         for idx, tree in enumerate(self.saved_trees):
@@ -305,6 +308,8 @@ class TransitionDiagram:
                 return self.saved_trees.pop(0)
             self.add_to_saved_trees(self.saved_trees.pop(0))
 
+    def code_gen(self, semantic_action):
+        self.code_generator.code_gen(semantic_action, self.parser.look_ahead)
 
 class State:
     def __init__(self, number, start_non_terminal, is_final=False, neighbors=None):

@@ -1,5 +1,3 @@
-Fun-declaration-prime -> #func_declare ( #scope+ Params ) #process_func Compound-stmt #scope-
-Var-declaration-prime -> ; #var_declare | [ #push NUM ] #arr_declare ;
 Program -> Declaration-list
 Declaration-list -> Declaration Declaration-list | epsilon
 Declaration -> Declaration-initial Declaration-prime
