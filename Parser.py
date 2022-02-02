@@ -318,7 +318,7 @@ class StartState(State):
                 condition.update(first)
                 if len(first) == len(ntt.first):
                     break
-                ntt, cur = cur.neighbors
+                ntt, cur, _ = cur.neighbors
             # follow
             if 'epsilon' in condition:
                 condition.update(self.start_non_terminal.follow)
