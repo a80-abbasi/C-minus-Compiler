@@ -95,6 +95,7 @@ class TransitionDiagram:
     grammar_address = 'c-minus_001.txt'
 
     def __init__(self, parser):
+        self.saved_actions = []
         grammar_file = open(file=TransitionDiagram.grammar_address, mode='r')
         self.grammar = grammar_file.read().splitlines()
         self.non_terminals = self.create_non_terminals()
@@ -143,13 +144,13 @@ class TransitionDiagram:
 
                 if len(other_ntt_name) > 0:
                     depth_two_state = State(number=state_number, start_non_terminal=self.non_terminals[non_terminal])
-                    start_state.add_neighbor(depth_two_state, ntt, semantic_action=semantic_action)  # first states after start state
+                    start_state.add_neighbor(depth_two_state, ntt,
+                                             semantic_action=semantic_action)  # first states after start state
                     semantic_action = None
 
                     state_number += 1
 
                     temporary_state = depth_two_state  # to make path neighbors
-
 
                     for other_name in other_ntt_name[0:-1]:
 
@@ -241,13 +242,15 @@ class TransitionDiagram:
             else:
                 self.parser.report_error('missing', ntt.name)
                 self.goto(neighbor)
+            if after_action is not None:
+                self.code_gen(after_action)
         else:
             new_state = self.start_symbols[ntt.number]
             self.goto(new_state)
             self.saved_states.append(neighbor)
             self.add_to_saved_trees(Tree(ntt.name), new=True)
-        if after_action is not None:
-            self.code_gen(after_action)
+            self.saved_actions.append(after_action)
+
 
     def find_tree(self, name):
         for idx, tree in enumerate(self.saved_trees):
@@ -268,6 +271,9 @@ class TransitionDiagram:
             # completing tree
             self.add_to_saved_trees(self.saved_trees.pop(0))
             self.state = self.saved_states.pop()
+            after_action = self.saved_actions.pop()
+            if after_action is not None:
+                self.code_gen(after_action)
             return
         if isinstance(self.state, StartState):
             for ntt, neighbor, condition, semantic_action, after_action in self.state.neighbors:
@@ -309,7 +315,8 @@ class TransitionDiagram:
             self.add_to_saved_trees(self.saved_trees.pop(0))
 
     def code_gen(self, semantic_action):
-        self.code_generator.code_gen(semantic_action, self.parser.look_ahead)
+        self.code_generator.code_gen(semantic_action, self.parser.look_ahead[1])
+
 
 class State:
     def __init__(self, number, start_non_terminal, is_final=False, neighbors=None):
