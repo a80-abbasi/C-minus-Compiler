@@ -3,14 +3,14 @@ Declaration-list -> Declaration Declaration-list | epsilon
 Declaration -> Declaration-initial Declaration-prime
 Declaration-initial -> #push Type-specifier #push ID
 Declaration-prime -> Fun-declaration-prime | Var-declaration-prime
-Var-declaration-prime -> ; #var_declare | [ #push NUM ] #arr_declare ;
+Var-declaration-prime -> ; #var_declare | [ #push_num NUM ] #arr_declare ;
 Fun-declaration-prime -> #func_declare ( #scope+ Params ) #process_func Compound-stmt #scope-
 Type-specifier -> int | void
 Params -> int #push ID Param-prime Param-list | void
 Param-list -> , Param Param-list | epsilon
 Param -> Declaration-initial Param-prime
 Param-prime -> [  ] #arr_param | epsilon #var_param
-Compound-stmt -> { Declaration-list Statement-list #return }
+Compound-stmt -> { Declaration-list Statement-list }
 Statement-list -> Statement Statement-list | epsilon
 Statement -> Expression-stmt | Compound-stmt | Selection-stmt | Iteration-stmt | Return-stmt
 Expression-stmt -> Expression ; #pop | break ; #break | ;
@@ -35,11 +35,11 @@ Term -> Factor G
 Term-prime -> Factor-prime G
 Term-zegond -> Factor-zegond G
 G -> * Factor #mult G | epsilon
-Factor -> ( Expression ) | #pid ID Var-call-prime | #push NUM
+Factor -> ( Expression ) | #pid ID Var-call-prime | #push_num NUM
 Var-call-prime -> ( Args ) #call | Var-prime
 Var-prime -> [ Expression ] #get_arr | epsilon
 Factor-prime -> #func_id ( Args ) #call | epsilon
-Factor-zegond -> ( Expression ) | #push NUM
+Factor-zegond -> ( Expression ) | #push_num NUM
 Args -> Arg-list | epsilon
 Arg-list -> Expression #arg Arg-list-prime
 Arg-list-prime -> , Expression #arg Arg-list-prime | epsilon

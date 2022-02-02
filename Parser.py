@@ -39,6 +39,8 @@ class Parser:
                     self.output_file.write("%s%s\n" % (pre, node.name))
 
                 self.close_files()
+                for code in self.td.code_generator.pb:
+                    print(code)
                 break
 
     def close_files(self):

@@ -9,7 +9,7 @@ class SymbolTable:
         self.add_func('output', 'void', 0)
         self.add_var_param('a', 'int', 1)
         self.table[0]['num'] = 1
-        self.table[0]['code_adrr'] = 0  # todo
+        self.table[0]['code_adrr'] = 1  # todo
 
     def __getitem__(self, item):
         return self.table[item]
@@ -100,11 +100,12 @@ class CodeGenerator:
             self.i += 1
         else:
             self.pb[i] = code
-        print(code)
 
     def code_gen(self, action: str, look_ahead):
         if action == 'push':
             self.push(look_ahead)
+        elif action == 'push_num':
+            self.push(f'#{look_ahead}')
         elif action == 'pop':
             self.pop()
         elif action == 'var_declare':
@@ -118,6 +119,7 @@ class CodeGenerator:
             self.scope += 1
         elif action == 'scope-':
             self.scope -= 1
+            self.add_op('JP', f'@{self.declare_func_row["return_addr"]}')
         elif action == 'var_param':
             self.table.add_var_param(self.stack[-1], 'int', self.scope)
             self.arg_counter += 1
@@ -150,13 +152,13 @@ class CodeGenerator:
             self.add_op('JPF', self.stack[-2], self.i + 1, i=self.stack[-1])
             self.pop(2)
             self.push(self.i)
-            self.i += 1
+            self.add_op('')
         elif action == 'pid':
             _, row = self.table.get_row(look_ahead)
             self.push(row['addr'])
         elif action == 'assign':
             self.add_op('ASSIGN', self.stack[-1], self.stack[-2])
-            self.pop(2)
+            self.pop(1) #todo
         elif action == 'get_arr':
             t = self.get_temp()
             self.add_op('MULT', self.stack[-1], 4, t)
