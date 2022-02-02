@@ -1,6 +1,7 @@
 # A:  0---B--->1
 # 0 and 1: State
 # B: NTT (NonTerminal or Terminal! change it if you want)
+from Code_Generator import CodeGenerator
 from scanner import Scanner
 from anytree import Node, RenderTree
 
@@ -90,6 +91,7 @@ def make_anytree(tree, parent=None):
     return root
 
 
+
 class TransitionDiagram:
     grammar_address = 'c-minus_001.txt'
 
@@ -101,6 +103,7 @@ class TransitionDiagram:
         self.start_symbols = self.create_transition_diagram()
         self.state = self.start_symbols[0]
         self.parser = parser
+        self.code_generator = CodeGenerator(parser)
         self.saved_states = []
         self.saved_states.append(self.state.neighbors[0][1])
         self.saved_trees = []
@@ -196,7 +199,9 @@ class TransitionDiagram:
         else:
             self.saved_trees[0].add_subtree(subtree)
 
-    def handle_transition(self, neighbor, ntt, look_ahead):
+    def handle_transition(self, neighbor, ntt, look_ahead, semantic_action):
+        if semantic_action is not None:
+            self.code_generator.code_gen(semantic_action)
         if ntt.is_terminal:
             if ntt.name == 'epsilon':
                 self.add_to_saved_trees(Tree('epsilon'))
@@ -235,16 +240,11 @@ class TransitionDiagram:
             self.state = self.saved_states.pop()
             return
         if isinstance(self.state, StartState):
-            for ntt, neighbor, condition in self.state.neighbors:
+            for ntt, neighbor, condition, semantic_action in self.state.neighbors:
                 if any(map(lambda x: terminal_matches(look_ahead, x), condition)):
-                    self.handle_transition(neighbor, ntt, look_ahead)
+                    self.handle_transition(neighbor, ntt, look_ahead, semantic_action)
                     return
-            # errors:
-            # if self.all_arcs_terminal():
-            #     ntt, neighbor, condition = self.get_closest_to_final()
-            #     self.parser.report_error('missing', ntt.name)
-            #     self.goto(neighbor)
-            #     return
+
             if get_lookahead_string(look_ahead) in self.state.start_non_terminal.follow:
                 self.parser.report_error('missing', self.state.start_non_terminal.name)
                 self.state = self.saved_states.pop()  # return from non terminal
@@ -257,8 +257,8 @@ class TransitionDiagram:
                 self.parser.report_error('illegal', get_lookahead_string(look_ahead))
                 self.parser.get_next_token()
         else:
-            ntt, neighbor = self.state.neighbors
-            self.handle_transition(neighbor, ntt, look_ahead)
+            ntt, neighbor, semantic_action = self.state.neighbors
+            self.handle_transition(neighbor, ntt, look_ahead, semantic_action)
 
     def goto(self, neighbor):
         self.state = neighbor
@@ -286,8 +286,8 @@ class State:
         self.neighbors = neighbors
         self.start_non_terminal = start_non_terminal
 
-    def add_neighbor(self, neighbor, input):  # input is an NTT
-        self.neighbors = input, neighbor
+    def add_neighbor(self, neighbor, input, semantic_action):  # input is an NTT
+        self.neighbors = input, neighbor, semantic_action
 
 
 class StartState(State):
@@ -296,8 +296,8 @@ class StartState(State):
         super().__init__(number, start_non_terminal, is_final, neighbors)
         self.neighbors = neighbors if neighbors is not None else []
 
-    def add_neighbor(self, neighbor, input):
-        self.neighbors.append((input, neighbor))
+    def add_neighbor(self, neighbor, input, semantic_action):
+        self.neighbors.append((input, neighbor, semantic_action))
 
     def create_condition_on_neighbors(self):
         # if self.start_non_terminal.name == '├── Additive-expression-prime':
@@ -305,7 +305,7 @@ class StartState(State):
         #     print('hi!')
 
         new_neighbors = []
-        for input, neighbor in self.neighbors:
+        for input, neighbor, semantic_action in self.neighbors:
             condition = set()
             cur = neighbor
             ntt = input
@@ -322,7 +322,7 @@ class StartState(State):
             # follow
             if 'epsilon' in condition:
                 condition.update(self.start_non_terminal.follow)
-            new_neighbors.append((input, neighbor, list(condition)))
+            new_neighbors.append((input, neighbor, semantic_action, list(condition)))
         self.neighbors = new_neighbors
 
 

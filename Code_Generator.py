@@ -34,6 +34,9 @@ class SymbolTable:
             if self.table[i]['lexeme'] == id:
                 return i
 
+    def get_row(self, id):
+        return self.table[self.get_index(id)]
+
 class CodeGenerator:
     def __init__(self, parser):
         self.parser: Parser = parser
@@ -41,7 +44,8 @@ class CodeGenerator:
         self.stack = []
         self.scope = 0
         self.i = 0
-
+        self.arg_coutner = 0
+        self.declare_func_name = None
 
     def push(self, val):
         self.stack.append(val)
@@ -66,10 +70,17 @@ class CodeGenerator:
             self.scope -= 1
         elif action == 'var_param':
             self.table.add_var_param(self.stack[-1], 'int', self.scope)
+            self.arg_coutner += 1
             self.pop(1)
         elif action == 'arr_param':
             self.table.add_arr_param(self.stack[-1], 'int', self.scope)
+            self.arg_coutner += 1
         elif action == 'func_declare':
             self.table.add_func(self.stack[-1], self.stack[-2], self.scope)
+            self.declare_func_name = self.stack[-1]
+            self.arg_coutner = 0
         elif action == 'process_func':
-            # todo:
+            func = self.table.get_row(self.declare_func_name)
+            func['num'] = self.arg_coutner
+            func['code_adrr'] = self.i
+            self.arg_coutner = 0
