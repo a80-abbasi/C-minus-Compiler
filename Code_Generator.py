@@ -1,8 +1,5 @@
 from typing import Any
 
-from Parser import Parser
-
-
 class SymbolTable:
     def __init__(self):
         self.table = []

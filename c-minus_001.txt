@@ -1,45 +1,47 @@
+Fun-declaration-prime -> #func_declare ( #scope+ Params ) #process_func Compound-stmt #scope-
+Var-declaration-prime -> ; #var_declare | [ #push NUM ] #arr_declare ;
 Program -> Declaration-list
-Declaration-list -> Declaration Declaration-list | epsilon 
+Declaration-list -> Declaration Declaration-list | epsilon
 Declaration -> Declaration-initial Declaration-prime
-Declaration-initial ->  Type-specifier ID
+Declaration-initial -> #push Type-specifier #push ID
 Declaration-prime -> Fun-declaration-prime | Var-declaration-prime
-Var-declaration-prime -> ; | [ NUM ] ; 
-Fun-declaration-prime ->  ( Params ) Compound-stmt
+Var-declaration-prime -> ; #var_declare | [ #push NUM ] #arr_declare ;
+Fun-declaration-prime -> #func_declare ( #scope+ Params ) #process_func Compound-stmt #scope-
 Type-specifier -> int | void
-Params -> int ID Param-prime Param-list | void
+Params -> int #push ID Param-prime Param-list | void
 Param-list -> , Param Param-list | epsilon
 Param -> Declaration-initial Param-prime
-Param-prime -> [  ] | epsilon
+Param-prime -> [  ] #arr_param | epsilon #var_param
 Compound-stmt -> { Declaration-list Statement-list }
 Statement-list -> Statement Statement-list | epsilon
 Statement -> Expression-stmt | Compound-stmt | Selection-stmt | Iteration-stmt | Return-stmt
-Expression-stmt -> Expression ; | break ; | ;
-Selection-stmt -> if ( Expression ) Statement Else-stmt
-Else-stmt -> endif | else Statement endif
-Iteration-stmt -> repeat Statement until ( Expression ) 
-Return-stmt -> return Return-stmt-prime
-Return-stmt-prime -> ; | Expression ;
-Expression -> Simple-expression-zegond | ID B
-B -> = Expression | [ Expression ] H | Simple-expression-prime
-H -> = Expression | G D C
+Expression-stmt -> Expression ; #pop | break ; #break | ;
+Selection-stmt -> if ( Expression ) #save Statement Else-stmt
+Else-stmt -> endif #jpf | else #jpf_save Statement #jp endif
+Iteration-stmt -> repeat #repeat Statement until #until ( Expression )
+Return-stmt -> return Return-stmt-prime #return
+Return-stmt-prime -> ; | Expression ; #set_return_value
+Expression -> Simple-expression-zegond | #pid ID B
+B -> = Expression #assign | [ Expression ] #get_arr H | Simple-expression-prime
+H -> = Expression #assign | G D C
 Simple-expression-zegond -> Additive-expression-zegond C
 Simple-expression-prime -> Additive-expression-prime C
-C -> Relop Additive-expression | epsilon
+C -> #push Relop Additive-expression #relop | epsilon
 Relop -> < | ==
 Additive-expression -> Term D
 Additive-expression-prime -> Term-prime D
 Additive-expression-zegond -> Term-zegond D
-D -> Addop Term D | epsilon
+D -> #push Addop Term #add_sub D | epsilon
 Addop -> + | -
 Term -> Factor G
 Term-prime -> Factor-prime G
 Term-zegond -> Factor-zegond G
-G -> * Factor G | epsilon
-Factor -> ( Expression ) | ID Var-call-prime | NUM
-Var-call-prime -> ( Args ) | Var-prime
-Var-prime -> [ Expression ] | epsilon
-Factor-prime -> ( Args ) | epsilon
-Factor-zegond -> ( Expression ) | NUM
+G -> * Factor #mult G | epsilon
+Factor -> ( Expression ) | #pid ID Var-call-prime | #push NUM
+Var-call-prime -> ( Args ) #call | Var-prime
+Var-prime -> [ Expression ] #get_arr | epsilon
+Factor-prime -> ( Args ) #call | epsilon
+Factor-zegond -> ( Expression ) | #push NUM
 Args -> Arg-list | epsilon
-Arg-list -> Expression Arg-list-prime
-Arg-list-prime -> , Expression Arg-list-prime | epsilon
+Arg-list -> Expression #arg Arg-list-prime
+Arg-list-prime -> , Expression #arg Arg-list-prime | epsilon
