@@ -62,7 +62,7 @@ class Parser:
         self.scanner.close_files()
 
         if not self.td.code_generator.has_error:
-            self.td.code_generator.semantic_error_file('The input program is semantically correct.')
+            self.td.code_generator.semantic_error_file.write('The input program is semantically correct.')
         self.td.code_generator.close_file()
 
         if not self.has_error:

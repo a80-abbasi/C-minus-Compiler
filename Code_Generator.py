@@ -214,8 +214,6 @@ class CodeGenerator:
         elif action == 'process_func':
             self.declare_func_row['num'] = self.arg_counter
             self.declare_func_row['code_adrr'] = self.i
-            # if self.declare_func_row['lexeme'] == 'main':
-            #     self.add_op('JP', self.i, i=1)
             self.arg_counter = 0
         elif action == 'save':
             self.push(self.i)
@@ -239,9 +237,8 @@ class CodeGenerator:
             else:
                 self.push(row['addr'])
         elif action == 'assign':
-            self.check_type_match(line_number, self.stack[-2], '#1')
-            self.check_type_match(line_number, self.stack[-1], '#1')
-            self.add_op('ASSIGN', self.stack[-1], self.stack[-2])
+            self.check_type_match(line_number, '#1', self.stack[-2])
+            self.check_type_match(line_number, '#1', self.stack[-1])
             self.pop(1)
         elif action == 'get_arr':
             t = self.get_temp()
@@ -254,8 +251,8 @@ class CodeGenerator:
             self.push(f'@{t2}')
         elif action == 'relop':
             a, relop, b = self.stack[-3:]
-            self.check_type_match(line_number, a, '#1')
-            self.check_type_match(line_number, b, '#1')
+            self.check_type_match(line_number, '#1', a)
+            self.check_type_match(line_number, '#1', b)
             t = self.get_temp()
             if relop == '==':
                 self.add_op('EQ', a, b, t)
@@ -265,8 +262,8 @@ class CodeGenerator:
             self.push(t)
         elif action == 'add_sub':
             a, add_sub, b = self.stack[-3:]
-            self.check_type_match(line_number, a, '#1')
-            self.check_type_match(line_number, b, '#1')
+            self.check_type_match(line_number, '#1', a)
+            self.check_type_match(line_number, '#1', b)
             t = self.get_temp()
             if add_sub == '+':
                 self.add_op('ADD', a, b, t)
@@ -276,8 +273,8 @@ class CodeGenerator:
             self.push(t)
         elif action == 'mult':
             a, b = self.stack[-2:]
-            self.check_type_match(line_number, a, '#1')
-            self.check_type_match(line_number, b, '#1')
+            self.check_type_match(line_number, '#1', a)
+            self.check_type_match(line_number, '#1', b)
             t = self.get_temp()
             self.add_op('MULT', a, b, t)
             self.pop(2)
