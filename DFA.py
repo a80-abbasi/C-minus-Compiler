@@ -78,7 +78,7 @@ class DFA:
         # other for NUM:
         self.add_edge(1, 2, lambda x: symbol(x) or whitespace(x) or slash(x) or x == '')
         # other than other (errors) for NUM:
-        self.add_edge(1, 3, lambda x: True)  # todo: check if this works fine
+        self.add_edge(1, 3, lambda x: True)
 
         self.add_edge(0, 4, letter)
         self.add_edge(4, 4, lambda x: letter(x) or digit(x))
@@ -89,12 +89,11 @@ class DFA:
         self.add_edge(6, 7, lambda x: x == '=')
         # other for =
         self.add_edge(6, 8, lambda x: letter(x) or digit(x) or whitespace(x) or slash(x) or (symbol(x) and x != '='))
-        # todo: symbol?
 
         self.add_edge(0, 9, lambda x: x == '*')
         self.add_edge(9, 10, lambda x: x == '/')
         # other for *
-        self.add_edge(9, 11, lambda x: valid(x))  # todo check if this works fine
+        self.add_edge(9, 11, lambda x: valid(x))
 
         self.add_edge(0, 12, lambda x: symbol(x) and x != '=' and x != '*')
 
@@ -102,8 +101,8 @@ class DFA:
 
         self.add_edge(0, 14, slash)
         self.add_edge(14, 15, slash)
-        self.add_edge(15, 15, lambda x: x != '\n' and x != '')  # todo:
-        self.add_edge(15, 16, lambda x: x == '\n' or x == '')  # todo:
+        self.add_edge(15, 15, lambda x: x != '\n' and x != '')
+        self.add_edge(15, 16, lambda x: x == '\n' or x == '')
         self.add_edge(14, 17, lambda x: x == '*')
         self.add_edge(14, 22, valid)
         self.add_edge(17, 18, lambda x: x == '*')

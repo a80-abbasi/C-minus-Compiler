@@ -75,7 +75,7 @@ class Parser:
         self.error_file.write(f'#{self.scanner.line_number} : syntax error, {type} {name}\n')
 
 
-def terminal_matches(lookahead, terminal):  # todo
+def terminal_matches(lookahead, terminal):
     type, value = lookahead
     if type == 'ID' or type == 'NUM':
         return type == terminal
@@ -327,7 +327,7 @@ class TransitionDiagram:
         return True
 
     def get_closest_to_final(self):
-        return self.state.neighbors[0]  # todo
+        return self.state.neighbors[0]
 
     def create_tree(self):
         while True:
