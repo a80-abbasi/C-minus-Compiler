@@ -328,7 +328,7 @@ class TransitionDiagram:
             self.add_to_saved_trees(self.saved_trees.pop(0))
 
     def code_gen(self, semantic_action):
-        self.code_generator.code_gen(semantic_action, self.parser.look_ahead[1])
+        self.code_generator.code_gen(semantic_action, self.parser.look_ahead[1], self.parser.scanner.line_number)
 
 
 class State:

@@ -9,7 +9,7 @@ class SymbolTable:
         self.add_func('output', 'void', 0)
         self.add_var_param('a', 'int', 1)
         self.table[0]['num'] = 1
-        self.table[0]['code_adrr'] = 2  # todo
+        self.table[0]['code_adrr'] = 2
 
     def __getitem__(self, item):
         return self.table[item]
@@ -50,6 +50,7 @@ class SymbolTable:
             elif one:
                 if row['lexeme'] == id:
                     return i, row
+        return None, None
 
     def get_row_by_addr(self, addr):
         one = True
@@ -81,6 +82,9 @@ class CodeGenerator:
         self.add_op('PRINT', 504)
         self.add_op('JP', f'@{self.table.table[0]["return_addr"]}')
 
+    def scope_error(self, line_number, id):
+        f'{line_number}: Semantic Error! {id} is not defined'
+
     def get_temp(self):
         self.temp += 4
         return self.temp
@@ -102,7 +106,7 @@ class CodeGenerator:
         else:
             self.pb[i] = code
 
-    def code_gen(self, action: str, look_ahead):
+    def code_gen(self, action: str, look_ahead, line_number):
         if action == 'push':
             self.push(look_ahead)
         elif action == 'push_num':
@@ -164,10 +168,11 @@ class CodeGenerator:
             self.add_op('')
         elif action == 'pid':
             _, row = self.table.get_row(look_ahead)
+
             self.push(row['addr'])
         elif action == 'assign':
             self.add_op('ASSIGN', self.stack[-1], self.stack[-2])
-            self.pop(1) #todo
+            self.pop(1)
         elif action == 'get_arr':
             t = self.get_temp()
             self.add_op('MULT', self.stack[-1], '#4', t)
