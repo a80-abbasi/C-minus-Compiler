@@ -96,6 +96,7 @@ class CodeGenerator:
         self.arg_counter = 0
         self.declare_func_row = None
         self.func_row = None
+        self.function_call_stack = [None]
         self.func_i = None
         self.more_parameter = False
         self.temp = 996
@@ -133,7 +134,7 @@ class CodeGenerator:
                     f"#{line_number} : Semantic Error! Mismatch in type of argument {arg_number} of '{func_id}'. Expected '{type1}' but got '{type2}' instead.")
             else:
                 self.write_error(
-                    f"#{line_number} : Semantic Error! Type mismatch in operands, Got '{type2}' instead of '{type1}'.")
+                    f"#{line_number} : Semantic Error! Type mismatch in operands, Got {type2} instead of {type1}.")
 
     def get_temp(self):
         self.temp += 4
@@ -239,6 +240,7 @@ class CodeGenerator:
         elif action == 'assign':
             self.check_type_match(line_number, '#1', self.stack[-2])
             self.check_type_match(line_number, '#1', self.stack[-1])
+            self.add_op('ASSIGN', self.stack[-1], self.stack[-2])
             self.pop(1)
         elif action == 'get_arr':
             t = self.get_temp()
@@ -297,11 +299,12 @@ class CodeGenerator:
                 self.break_error(line_number)
         elif action == 'func_id':
             func_addr = self.stack[-1]
-            self.func_i, self.func_row = self.table.get_row_by_addr(func_addr)
+            self.function_call_stack.append(self.table.get_row_by_addr(func_addr))
             self.more_parameter = False
             self.pop()
         elif action == 'arg':
             self.arg_counter += 1
+            self.func_i, self.func_row = self.function_call_stack[-1]
             if self.arg_counter > self.func_row['num'] and not self.more_parameter:
                 self.more_parameter = True
                 self.parameter_number_matching(line_number, self.func_row['lexeme'])
@@ -312,6 +315,7 @@ class CodeGenerator:
                 self.add_op('ASSIGN', self.stack[-1], arg_addr)
                 self.pop()
         elif action == 'call':
+            self.func_i, self.func_row = self.function_call_stack[-1]
             if self.arg_counter != self.func_row['num'] and not self.more_parameter:
                 self.parameter_number_matching(line_number, self.func_row['lexeme'])
             self.arg_counter = 0
@@ -321,7 +325,7 @@ class CodeGenerator:
             if self.func_row['type'] != 'void':
                 self.add_op('ASSIGN', self.func_row['addr'], t)
             self.push(t)
-            self.func_i, self.func_row = None, None
+            self.function_call_stack.pop()
         elif action == 'set_return_value':
             self.add_op('ASSIGN', self.stack[-1], self.declare_func_row['addr'])
             self.pop()

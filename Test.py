@@ -49,5 +49,12 @@ class Test(unittest.TestCase):
             with self.subTest(i=i):
                 copyfile(f'PA_3/TestCases/T{i}/input.txt', 'input.txt')
                 os.system('python compiler.py')
-                os.system('./tester_Linux.out >> expected.txt')
+                os.system('./tester_Linux.out > expected.txt')
                 self.assertMultiLineEqual(Test.output(f'PA_3/TestCases/T{i}/expected.txt'), Test.output('expected.txt'))
+
+    def test_base_phase4(self):
+        for i in range(1, 11):
+            with self.subTest(i=i):
+                copyfile(f'PA_3/TestCases/T{i}/input.txt', 'input.txt')
+                os.system('python compiler.py')
+                os.system(f'./tester_Linux.out > outputs/expected{i}.txt')
