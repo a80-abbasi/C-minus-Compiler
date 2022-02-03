@@ -65,12 +65,17 @@ class SymbolTable:
 
 
 class CodeGenerator:
+
+    semantic_error_address = 'semantic_errors.txt'
+
     def __init__(self):
         self.table = SymbolTable()
         self.stack = []
         self.pb = []
         self.scope = 0
         self.i = 0
+        self.has_error = False
+        self.semantic_error_file = open(CodeGenerator.semantic_error_address, 'w')
         self.arg_counter = 0
         self.declare_func_row = None
         self.func_row = None
@@ -82,8 +87,18 @@ class CodeGenerator:
         self.add_op('PRINT', 504)
         self.add_op('JP', f'@{self.table.table[0]["return_addr"]}')
 
+    def write_error(self, error):
+        self.has_error = True
+        self.semantic_error_file.write(f'{error}\n')
+
+    def close_file(self):
+        self.semantic_error_file.close()
+
     def scope_error(self, line_number, id):
         f'{line_number}: Semantic Error! {id} is not defined'
+
+    def break_error(self, line_number):
+        self.write_error(f"#{line_number}: Semantic Error! No 'repeat ... until' found for 'break'.")
 
     def get_temp(self):
         self.temp += 4
@@ -220,8 +235,8 @@ class CodeGenerator:
                 t = self.repeat_stack[-1]
                 self.add_op('JP', f'@{t}')
             else:
-                pass
-        #         todo: break error
+                s
+        #      todo: break error
         elif action == 'func_id':
             func_addr = self.stack[-1]
             self.func_i, self.func_row = self.table.get_row_by_addr(func_addr)
