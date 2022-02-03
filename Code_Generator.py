@@ -21,7 +21,7 @@ class SymbolTable:
     def add_arr(self, lexeme, type, num, scope):
         self.table.append({'lexeme': lexeme, 'type': type + '*', 'num': num, 'scope': scope, 'kind': 'var',
                            'addr': self.addr})
-        self.update_addr(type, int(num))
+        self.update_addr(type, int(num) + 1)
 
     def add_func(self, lexeme, type, scope):
         self.table.append({'lexeme': lexeme, 'type': type, 'scope': scope, 'kind': 'func', 'addr': self.addr,
@@ -77,7 +77,7 @@ class CodeGenerator:
         self.temp = 996
         self.repeat_stack = []
         self.add_op('')
-        self.add_op('')
+        self.add_op('JP', self.i + 3)
         self.add_op('PRINT', 504)
         self.add_op('JP', f'@{self.table.table[0]["return_addr"]}')
 
@@ -115,12 +115,9 @@ class CodeGenerator:
         elif action == 'arr_declare':
             # todo: void error
             self.table.add_arr(self.stack[-2], self.stack[-3], self.stack[-1][1:], self.scope)
+            arr_row = self.table.table[-1]
+            self.add_op('ASSIGN', f'#{arr_row["addr"] + 4}', arr_row["addr"])
             self.pop(3)
-        elif action == 'scope+':
-            self.scope += 1
-        elif action == 'scope-':
-            self.scope -= 1
-            self.add_op('JP', f'@{self.declare_func_row["return_addr"]}')
         elif action == 'var_param':
             self.table.add_var_param(self.stack[-1], self.stack[-2], self.scope)
             self.arg_counter += 1
@@ -134,11 +131,22 @@ class CodeGenerator:
             self.declare_func_row = self.table.table[-1]
             self.arg_counter = 0
             self.pop(2)
+            self.scope += 1
+            if self.declare_func_row['lexeme'] != 'main':
+                self.push(self.i)
+                self.add_op('')
+        elif action == 'func_end':
+            self.scope -= 1
+            self.add_op('JP', f'@{self.declare_func_row["return_addr"]}')
+            if self.declare_func_row['lexeme'] != 'main':
+                self.add_op('JP', self.i, i=self.stack[-1])
+                self.pop()
+            self.declare_func_row = None
         elif action == 'process_func':
             self.declare_func_row['num'] = self.arg_counter
             self.declare_func_row['code_adrr'] = self.i
-            if self.declare_func_row['lexeme'] == 'main':
-                self.add_op('JP', self.i, i=1)
+            # if self.declare_func_row['lexeme'] == 'main':
+            #     self.add_op('JP', self.i, i=1)
             self.arg_counter = 0
         elif action == 'save':
             self.push(self.i)
@@ -165,7 +173,7 @@ class CodeGenerator:
             self.add_op('MULT', self.stack[-1], '#4', t)
             self.pop()
             t2 = self.get_temp()
-            self.add_op('ADD', t, f'#{self.stack[-1]}', t2)
+            self.add_op('ADD', t, self.stack[-1], t2)
             self.pop()
             self.push(f'@{t2}')
         elif action == 'relop':
