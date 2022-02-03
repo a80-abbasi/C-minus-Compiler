@@ -62,21 +62,27 @@ class SymbolTable:
             elif one:
                 if row['addr'] == addr:
                     return i, row
+        return None, None
 
     def get_type(self, addr):
         if isinstance(addr, str) and addr.startswith('#'):
             return 'int'
-        _, row = self.get_row_by_addr(addr)
+        row = None
+        for r in self.table:
+            if r['addr'] == addr:
+                row = r
+                break
         if row is None:
             return 'int'
         elif row['kind'] == 'func':
             return 'func'
+        elif row['type'] == 'int*':
+            return 'array'
         else:
             return row['type']
 
 
 class CodeGenerator:
-
     semantic_error_address = 'semantic_errors.txt'
 
     def __init__(self):
@@ -91,6 +97,7 @@ class CodeGenerator:
         self.declare_func_row = None
         self.func_row = None
         self.func_i = None
+        self.more_parameter = False
         self.temp = 996
         self.repeat_stack = []
         self.add_op('')
@@ -112,16 +119,21 @@ class CodeGenerator:
         self.write_error(f"#{line_number} : Semantic Error! Illegal type of void for '{id}'.")
 
     def parameter_number_matching(self, line_number, id):
-        self.write_error(f"#{line_number} : Semantic error! Mismatch in numbers of arguments of '{id}'.")
+        self.write_error(f"#{line_number} : Semantic Error! Mismatch in numbers of arguments of '{id}'.")
 
     def break_error(self, line_number):
         self.write_error(f"#{line_number} : Semantic Error! No 'repeat ... until' found for 'break'.")
 
-    def check_type_match(self, line_number, addr1, addr2):
+    def check_type_match(self, line_number, addr1, addr2, func_id=None, arg_number=0):
         type1 = self.table.get_type(addr1)
         type2 = self.table.get_type(addr2)
         if type1 != type2:
-            self.write_error(f"#{line_number} : Semantic Error! Type mismatch in operands, Got '{type2}' instead of '{type1}'.")
+            if func_id:
+                self.write_error(
+                    f"#{line_number} : Semantic Error! Mismatch in type of argument {arg_number} for '{func_id}'. Expected '{type1}' but got '{type2}' instead.")
+            else:
+                self.write_error(
+                    f"#{line_number} : Semantic Error! Type mismatch in operands, Got '{type2}' instead of '{type1}'.")
 
     def get_temp(self):
         self.temp += 4
@@ -219,6 +231,7 @@ class CodeGenerator:
             _, row = self.table.get_row(look_ahead)
             if row is None:
                 self.scope_error(line_number, look_ahead)
+                self.push(self.get_temp())
             else:
                 self.push(row['addr'])
         elif action == 'assign':
@@ -280,16 +293,21 @@ class CodeGenerator:
         elif action == 'func_id':
             func_addr = self.stack[-1]
             self.func_i, self.func_row = self.table.get_row_by_addr(func_addr)
+            self.more_parameter = False
             self.pop()
         elif action == 'arg':
-            # todo: type of arguments
             self.arg_counter += 1
-            arg_addr = self.table.table[self.func_i + self.arg_counter]['addr']
-            self.check_type_match(line_number, arg_addr, self.stack[-1])
-            self.add_op('ASSIGN', self.stack[-1], arg_addr)
-            self.pop()
+            if self.arg_counter > self.func_row['num'] and not self.more_parameter:
+                self.more_parameter = True
+                self.parameter_number_matching(line_number, self.func_row['lexeme'])
+                self.pop()
+            else:
+                arg_addr = self.table.table[self.func_i + self.arg_counter]['addr']
+                self.check_type_match(line_number, arg_addr, self.stack[-1], self.func_row['lexeme'], self.arg_counter)
+                self.add_op('ASSIGN', self.stack[-1], arg_addr)
+                self.pop()
         elif action == 'call':
-            if self.arg_counter != self.func_row['num']:
+            if self.arg_counter != self.func_row['num'] and not self.more_parameter:
                 self.parameter_number_matching(line_number, self.func_row['lexeme'])
             self.arg_counter = 0
             self.add_op('ASSIGN', f'#{self.i + 2}', self.func_row['return_addr'])
