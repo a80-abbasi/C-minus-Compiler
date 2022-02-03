@@ -63,6 +63,17 @@ class SymbolTable:
                 if row['addr'] == addr:
                     return i, row
 
+    def get_type(self, addr):
+        if isinstance(addr, str) and addr.startswith('#'):
+            return 'int'
+        _, row = self.get_row_by_addr(addr)
+        if row is None:
+            return 'int'
+        elif row['kind'] == 'func':
+            return 'func'
+        else:
+            return row['type']
+
 
 class CodeGenerator:
 
@@ -95,10 +106,22 @@ class CodeGenerator:
         self.semantic_error_file.close()
 
     def scope_error(self, line_number, id):
-        f'{line_number}: Semantic Error! {id} is not defined'
+        self.write_error(f"#{line_number} : Semantic Error! '{id}' is not defined.")
+
+    def void_type(self, line_number, id):
+        self.write_error(f"#{line_number} : Semantic Error! Illegal type of void for '{id}'.")
+
+    def parameter_number_matching(self, line_number, id):
+        self.write_error(f"#{line_number} : Semantic error! Mismatch in numbers of arguments of '{id}'.")
 
     def break_error(self, line_number):
-        self.write_error(f"#{line_number}: Semantic Error! No 'repeat ... until' found for 'break'.")
+        self.write_error(f"#{line_number} : Semantic Error! No 'repeat ... until' found for 'break'.")
+
+    def check_type_match(self, line_number, addr1, addr2):
+        type1 = self.table.get_type(addr1)
+        type2 = self.table.get_type(addr2)
+        if type1 != type2:
+            self.write_error(f"#{line_number} : Semantic Error! Type mismatch in operands, Got '{type2}' instead of '{type1}'.")
 
     def get_temp(self):
         self.temp += 4
@@ -129,19 +152,30 @@ class CodeGenerator:
         elif action == 'pop':
             self.pop()
         elif action == 'var_declare':
+            type = self.stack[-2]
+            if type == 'void':
+                self.void_type(line_number, self.stack[-1])
             self.table.add_var(self.stack[-1], self.stack[-2], self.scope)
             self.pop(2)
         elif action == 'arr_declare':
-            # todo: void error
+            type = self.stack[-3]
+            if type == 'void':
+                self.void_type(line_number, self.stack[-2])
             self.table.add_arr(self.stack[-2], self.stack[-3], self.stack[-1][1:], self.scope)
             arr_row = self.table.table[-1]
             self.add_op('ASSIGN', f'#{arr_row["addr"] + 4}', arr_row["addr"])
             self.pop(3)
         elif action == 'var_param':
+            type = self.stack[-2]
+            if type == 'void':
+                self.void_type(line_number, self.stack[-1])
             self.table.add_var_param(self.stack[-1], self.stack[-2], self.scope)
             self.arg_counter += 1
             self.pop(2)
         elif action == 'arr_param':
+            type = self.stack[-2]
+            if type == 'void':
+                self.void_type(line_number, self.stack[-1])
             self.table.add_arr_param(self.stack[-1], self.stack[-2], self.scope)
             self.arg_counter += 1
             self.pop(2)
@@ -183,13 +217,17 @@ class CodeGenerator:
             self.add_op('')
         elif action == 'pid':
             _, row = self.table.get_row(look_ahead)
-
-            self.push(row['addr'])
+            if row is None:
+                self.scope_error(line_number, look_ahead)
+            else:
+                self.push(row['addr'])
         elif action == 'assign':
+            self.check_type_match(line_number, self.stack[-2], self.stack[-1])
             self.add_op('ASSIGN', self.stack[-1], self.stack[-2])
             self.pop(1)
         elif action == 'get_arr':
             t = self.get_temp()
+            self.check_type_match(line_number, '#4', self.stack[-1])
             self.add_op('MULT', self.stack[-1], '#4', t)
             self.pop()
             t2 = self.get_temp()
@@ -198,6 +236,7 @@ class CodeGenerator:
             self.push(f'@{t2}')
         elif action == 'relop':
             a, relop, b = self.stack[-3:]
+            self.check_type_match(line_number, a, b)
             t = self.get_temp()
             if relop == '==':
                 self.add_op('EQ', a, b, t)
@@ -207,6 +246,7 @@ class CodeGenerator:
             self.push(t)
         elif action == 'add_sub':
             a, add_sub, b = self.stack[-3:]
+            self.check_type_match(line_number, a, b)
             t = self.get_temp()
             if add_sub == '+':
                 self.add_op('ADD', a, b, t)
@@ -216,6 +256,7 @@ class CodeGenerator:
             self.push(t)
         elif action == 'mult':
             a, b = self.stack[-2:]
+            self.check_type_match(line_number, a, b)
             t = self.get_temp()
             self.add_op('MULT', a, b, t)
             self.pop(2)
@@ -244,10 +285,12 @@ class CodeGenerator:
             # todo: type of arguments
             self.arg_counter += 1
             arg_addr = self.table.table[self.func_i + self.arg_counter]['addr']
+            self.check_type_match(line_number, arg_addr, self.stack[-1])
             self.add_op('ASSIGN', self.stack[-1], arg_addr)
             self.pop()
         elif action == 'call':
-            # todo: error: number of arguments
+            if self.arg_counter != self.func_row['num']:
+                self.parameter_number_matching(line_number, self.func_row['lexeme'])
             self.arg_counter = 0
             self.add_op('ASSIGN', f'#{self.i + 2}', self.func_row['return_addr'])
             self.add_op('JP', self.func_row['code_adrr'])
