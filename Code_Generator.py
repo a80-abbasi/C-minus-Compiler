@@ -122,13 +122,13 @@ class CodeGenerator:
             self.scope -= 1
             self.add_op('JP', f'@{self.declare_func_row["return_addr"]}')
         elif action == 'var_param':
-            self.table.add_var_param(self.stack[-1], 'int', self.scope)
+            self.table.add_var_param(self.stack[-1], self.stack[-2], self.scope)
             self.arg_counter += 1
-            self.pop(1)
+            self.pop(2)
         elif action == 'arr_param':
-            self.table.add_arr_param(self.stack[-1], 'int', self.scope)
+            self.table.add_arr_param(self.stack[-1], self.stack[-2], self.scope)
             self.arg_counter += 1
-            self.pop(1)
+            self.pop(2)
         elif action == 'func_declare':
             self.table.add_func(self.stack[-1], self.stack[-2], self.scope)
             self.declare_func_row = self.table.table[-1]
@@ -189,7 +189,7 @@ class CodeGenerator:
         elif action == 'mult':
             a, b = self.stack[-2:]
             t = self.get_temp()
-            self.add_op('SUB', a, b, t)
+            self.add_op('MULT', a, b, t)
             self.pop(2)
             self.push(t)
         elif action == 'repeat':
@@ -201,6 +201,7 @@ class CodeGenerator:
             j = self.stack[-2]
             self.add_op('JPF', self.stack[-1], j + 1)
             self.add_op('ASSIGN', f'#{self.i}', t, i=j)
+            self.pop(2)
         elif action == 'break':
             if self.repeat_stack:
                 t = self.repeat_stack[-1]
