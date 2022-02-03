@@ -9,7 +9,7 @@ class SymbolTable:
         self.add_func('output', 'void', 0)
         self.add_var_param('a', 'int', 1)
         self.table[0]['num'] = 1
-        self.table[0]['code_adrr'] = 1  # todo
+        self.table[0]['code_adrr'] = 2  # todo
 
     def __getitem__(self, item):
         return self.table[item]
@@ -77,6 +77,7 @@ class CodeGenerator:
         self.temp = 996
         self.repeat_stack = []
         self.add_op('')
+        self.add_op('')
         self.add_op('PRINT', 504)
         self.add_op('JP', f'@{self.table.table[0]["return_addr"]}')
 
@@ -113,7 +114,7 @@ class CodeGenerator:
             self.pop(2)
         elif action == 'arr_declare':
             # todo: void error
-            self.table.add_arr(self.stack[-2], self.stack[-3], self.stack[-1], self.scope)
+            self.table.add_arr(self.stack[-2], self.stack[-3], self.stack[-1][1:], self.scope)
             self.pop(3)
         elif action == 'scope+':
             self.scope += 1
@@ -137,7 +138,7 @@ class CodeGenerator:
             self.declare_func_row['num'] = self.arg_counter
             self.declare_func_row['code_adrr'] = self.i
             if self.declare_func_row['lexeme'] == 'main':
-                self.add_op('JP', self.i, i=0)
+                self.add_op('JP', self.i, i=1)
             self.arg_counter = 0
         elif action == 'save':
             self.push(self.i)
@@ -161,12 +162,12 @@ class CodeGenerator:
             self.pop(1) #todo
         elif action == 'get_arr':
             t = self.get_temp()
-            self.add_op('MULT', self.stack[-1], 4, t)
+            self.add_op('MULT', self.stack[-1], '#4', t)
             self.pop()
             t2 = self.get_temp()
             self.add_op('ADD', t, f'#{self.stack[-1]}', t2)
             self.pop()
-            self.push(t2)
+            self.push(f'@{t2}')
         elif action == 'relop':
             a, relop, b = self.stack[-3:]
             t = self.get_temp()
@@ -223,7 +224,8 @@ class CodeGenerator:
             self.add_op('ASSIGN', f'#{self.i + 2}', self.func_row['return_addr'])
             self.add_op('JP', self.func_row['code_adrr'])
             t = self.get_temp()
-            self.add_op('ASSIGN', self.func_row['addr'], t)
+            if self.func_row['type'] != 'void':
+                self.add_op('ASSIGN', self.func_row['addr'], t)
             self.push(t)
             self.func_i, self.func_row = None, None
         elif action == 'set_return_value':

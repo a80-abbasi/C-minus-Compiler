@@ -10,6 +10,7 @@ class Parser:
     input_address = 'input.txt'
     error_address = 'syntax_errors.txt'
     parse_tree_address = 'parse_tree.txt'
+    output_address = 'output.txt'
 
     def __init__(self):
         NTT.read_follow_sets()
@@ -37,6 +38,19 @@ class Parser:
 
                 for pre, fill, node in RenderTree(output_tree):
                     self.output_file.write("%s%s\n" % (pre, node.name))
+
+                _, main_row = self.td.code_generator.table.get_row('main')
+                return_addr = main_row['return_addr']
+                end_line = len(self.td.code_generator.pb)
+                self.td.code_generator.add_op('ASSIGN', f'#{end_line}', return_addr, i=0)
+                with open(Parser.output_address, 'w') as output_file:
+                    for line, generated_code in enumerate(self.td.code_generator.pb):
+                        output_file.write(f'{line}\t{generated_code}\n')
+
+                with open('symbol_table.txt', 'w') as file:
+                    for i, id in enumerate(self.td.code_generator.table.table):
+                        file.write(f'{i}.\t{id}\n')
+
 
                 self.close_files()
                 for code in self.td.code_generator.pb:
@@ -252,7 +266,6 @@ class TransitionDiagram:
             self.saved_states.append(neighbor)
             self.add_to_saved_trees(Tree(ntt.name), new=True)
             self.saved_actions.append(after_action)
-
 
     def find_tree(self, name):
         for idx, tree in enumerate(self.saved_trees):

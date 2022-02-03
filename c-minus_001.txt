@@ -36,7 +36,7 @@ Term-prime -> Factor-prime G
 Term-zegond -> Factor-zegond G
 G -> * Factor #mult G | epsilon
 Factor -> ( Expression ) | #pid ID Var-call-prime | #push_num NUM
-Var-call-prime -> ( Args ) #call | Var-prime
+Var-call-prime -> #func_id ( Args ) #call | Var-prime
 Var-prime -> [ Expression ] #get_arr | epsilon
 Factor-prime -> #func_id ( Args ) #call | epsilon
 Factor-zegond -> ( Expression ) | #push_num NUM

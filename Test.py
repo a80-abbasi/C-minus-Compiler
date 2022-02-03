@@ -43,3 +43,11 @@ class Test(unittest.TestCase):
                 os.system('python compiler.py')
                 self.assertMultiLineEqual(Test.output(f'PA2_testcases/T{i:02d}/parse_tree.txt'), Test.output('parse_tree.txt'))
                 self.assertMultiLineEqual(Test.output(f'PA2_testcases/T{i:02d}/syntax_errors.txt'), Test.output('syntax_errors.txt'))
+
+    def test_base_phase3(self):
+        for i in range(1, 11):
+            with self.subTest(i=i):
+                copyfile(f'PA_3/TestCases/T{i}/input.txt', 'input.txt')
+                os.system('python compiler.py')
+                os.system('./tester_Linux.out')
+                self.assertMultiLineEqual(Test.output(f'PA_3/TestCases/T{i}/expected.txt'), Test.output('parse_tree.txt'))

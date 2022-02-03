@@ -82,6 +82,6 @@ class Scanner:
         if not self.lexical_error_find:
             self.errors_file.write('There is no lexical error.')
         self.errors_file.close()
-        with open('symbol_table.txt', 'w') as file:
-            for i, id in enumerate(self.symbol_table):
-                file.write(f'{i + 1}.\t{id}\n')
+    #    with open('symbol_table.txt', 'w') as file:
+    #        for i, id in enumerate(self.symbol_table):
+    #            file.write(f'{i + 1}.\t{id}\n')
