@@ -130,7 +130,7 @@ class CodeGenerator:
         if type1 != type2:
             if func_id:
                 self.write_error(
-                    f"#{line_number} : Semantic Error! Mismatch in type of argument {arg_number} for '{func_id}'. Expected '{type1}' but got '{type2}' instead.")
+                    f"#{line_number} : Semantic Error! Mismatch in type of argument {arg_number} of '{func_id}'. Expected '{type1}' but got '{type2}' instead.")
             else:
                 self.write_error(
                     f"#{line_number} : Semantic Error! Type mismatch in operands, Got '{type2}' instead of '{type1}'.")
@@ -167,29 +167,33 @@ class CodeGenerator:
             type = self.stack[-2]
             if type == 'void':
                 self.void_type(line_number, self.stack[-1])
-            self.table.add_var(self.stack[-1], self.stack[-2], self.scope)
+            else:
+                self.table.add_var(self.stack[-1], self.stack[-2], self.scope)
             self.pop(2)
         elif action == 'arr_declare':
             type = self.stack[-3]
             if type == 'void':
                 self.void_type(line_number, self.stack[-2])
-            self.table.add_arr(self.stack[-2], self.stack[-3], self.stack[-1][1:], self.scope)
-            arr_row = self.table.table[-1]
-            self.add_op('ASSIGN', f'#{arr_row["addr"] + 4}', arr_row["addr"])
+            else:
+                self.table.add_arr(self.stack[-2], self.stack[-3], self.stack[-1][1:], self.scope)
+                arr_row = self.table.table[-1]
+                self.add_op('ASSIGN', f'#{arr_row["addr"] + 4}', arr_row["addr"])
             self.pop(3)
         elif action == 'var_param':
             type = self.stack[-2]
             if type == 'void':
                 self.void_type(line_number, self.stack[-1])
-            self.table.add_var_param(self.stack[-1], self.stack[-2], self.scope)
-            self.arg_counter += 1
+            else:
+                self.table.add_var_param(self.stack[-1], self.stack[-2], self.scope)
+                self.arg_counter += 1
             self.pop(2)
         elif action == 'arr_param':
             type = self.stack[-2]
             if type == 'void':
                 self.void_type(line_number, self.stack[-1])
-            self.table.add_arr_param(self.stack[-1], self.stack[-2], self.scope)
-            self.arg_counter += 1
+            else:
+                self.table.add_arr_param(self.stack[-1], self.stack[-2], self.scope)
+                self.arg_counter += 1
             self.pop(2)
         elif action == 'func_declare':
             self.table.add_func(self.stack[-1], self.stack[-2], self.scope)
@@ -235,7 +239,8 @@ class CodeGenerator:
             else:
                 self.push(row['addr'])
         elif action == 'assign':
-            self.check_type_match(line_number, self.stack[-2], self.stack[-1])
+            self.check_type_match(line_number, self.stack[-2], '#1')
+            self.check_type_match(line_number, self.stack[-1], '#1')
             self.add_op('ASSIGN', self.stack[-1], self.stack[-2])
             self.pop(1)
         elif action == 'get_arr':
@@ -249,7 +254,8 @@ class CodeGenerator:
             self.push(f'@{t2}')
         elif action == 'relop':
             a, relop, b = self.stack[-3:]
-            self.check_type_match(line_number, a, b)
+            self.check_type_match(line_number, a, '#1')
+            self.check_type_match(line_number, b, '#1')
             t = self.get_temp()
             if relop == '==':
                 self.add_op('EQ', a, b, t)
@@ -259,7 +265,8 @@ class CodeGenerator:
             self.push(t)
         elif action == 'add_sub':
             a, add_sub, b = self.stack[-3:]
-            self.check_type_match(line_number, a, b)
+            self.check_type_match(line_number, a, '#1')
+            self.check_type_match(line_number, b, '#1')
             t = self.get_temp()
             if add_sub == '+':
                 self.add_op('ADD', a, b, t)
@@ -269,7 +276,8 @@ class CodeGenerator:
             self.push(t)
         elif action == 'mult':
             a, b = self.stack[-2:]
-            self.check_type_match(line_number, a, b)
+            self.check_type_match(line_number, a, '#1')
+            self.check_type_match(line_number, b, '#1')
             t = self.get_temp()
             self.add_op('MULT', a, b, t)
             self.pop(2)
