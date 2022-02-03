@@ -7,3 +7,5 @@ syntax_errors.txt
 PA2_testcases
 PA1_testcases1.3
 *.zip
+/expected.txt
+/output.txt
