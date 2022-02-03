@@ -235,8 +235,7 @@ class CodeGenerator:
                 t = self.repeat_stack[-1]
                 self.add_op('JP', f'@{t}')
             else:
-                s
-        #      todo: break error
+                self.break_error(line_number)
         elif action == 'func_id':
             func_addr = self.stack[-1]
             self.func_i, self.func_row = self.table.get_row_by_addr(func_addr)

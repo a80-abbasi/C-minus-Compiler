@@ -39,18 +39,21 @@ class Parser:
                 for pre, fill, node in RenderTree(output_tree):
                     self.output_file.write("%s%s\n" % (pre, node.name))
 
-                _, main_row = self.td.code_generator.table.get_row('main')
-                return_addr = main_row['return_addr']
-                end_line = len(self.td.code_generator.pb)
-                self.td.code_generator.add_op('ASSIGN', f'#{end_line}', return_addr, i=0)
-                with open(Parser.output_address, 'w') as output_file:
-                    for line, generated_code in enumerate(self.td.code_generator.pb):
-                        output_file.write(f'{line}\t{generated_code}\n')
+                if not self.td.code_generator.has_error:
+                    _, main_row = self.td.code_generator.table.get_row('main')
+                    return_addr = main_row['return_addr']
+                    end_line = len(self.td.code_generator.pb)
+                    self.td.code_generator.add_op('ASSIGN', f'#{end_line}', return_addr, i=0)
+                    with open(Parser.output_address, 'w') as output_file:
+                        for line, generated_code in enumerate(self.td.code_generator.pb):
+                            output_file.write(f'{line}\t{generated_code}\n')
+                else:
+                    with open(Parser.output_address, 'w') as output_file:
+                        output_file.write(f'The code has not been generated.')
 
                 with open('symbol_table.txt', 'w') as file:
                     for i, id in enumerate(self.td.code_generator.table.table):
                         file.write(f'{i}.\t{id}\n')
-
 
                 self.close_files()
                 break
